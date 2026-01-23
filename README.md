@@ -34,6 +34,3 @@ Scripts with all code are stored in the `./R` folder.
 
 -   **associations-between-outcomes-analysis:** Explorative analysis of whether within-individual response variability in one outcome was associated the within-individual response variability in another outcome
 
-`./data` contains processed data stored in `/data/derivedData`(data is not).
-
-`./figures` contains figure 2 to 5 as png files.
