@@ -1,0 +1,485 @@
+---
+title: "group-and-individual-training-responses-figure4"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+
+
+```{r}
+#| label: Packages 
+
+# Loading needed packages
+source("./R/libs.R")
+
+
+# Read the RDS files containing the data
+## Test data
+test_data_long <- readRDS(file = "data/derivedData/test_data_long")
+
+test_data_wide <- readRDS(file = "data/derivedData/test_data_wide")
+
+
+```
+
+
+## Figure 4: Group and individual training responses
+
+Creating a figure with 6 panels showing A-C) individual and group mean development in training outcomes in period 1 and 2, and D-F) individual and group mean change scores in period 2 and 2.
+
+
+### Panels A-C: individual and group mean development in training outcomes in period 1 and 2
+
+```{r}
+#| label: Figure 4 A-C
+
+# Saving sizes and widths of points and lines so easy to adjust
+point.size = 0.7
+line.width.individual = 0.3
+line.width.mean = 0.5
+errorbar.width.diff = 0.5
+axis.width = 0.4
+text.size = 9
+title.text.size = 9
+
+
+
+# Create a dummy plot to serve as empty space
+empty <- ggplot() + theme_void()
+
+
+# PO15-min
+
+# Create plot showing mean and individual changes across training interventions
+fig.timepoints <- test_data_wide %>%
+  select(id, period, timepoint, watt.15tt) %>% 
+  mutate(timepoint = ifelse(period == 1 & timepoint == "pre", "ET-1pre", timepoint)) %>%
+  mutate(timepoint = ifelse(period == 1 & timepoint == "post", "ET-1post", timepoint)) %>%
+  mutate(timepoint = ifelse(period == 2 & timepoint == "pre", "ET-2pre", timepoint)) %>%
+  mutate(timepoint = ifelse(period == 2 & timepoint == "post", "ET-2post", timepoint)) %>%
+  mutate(timepoint = factor(timepoint, levels = c("ET-1pre", "ET-1post",  "ET-2pre", "ET-2post"))) %>%  
+  ggplot(., aes(x=timepoint, y=watt.15tt)) +
+  geom_line(aes(group = id), linewidth = line.width.individual, colour = "grey30", alpha = 0.3) +
+  stat_summary(aes(colour="mean",group=1), fun = mean, geom="line", linewidth = line.width.mean, colour = "black") +
+  geom_line(data = . %>% filter(timepoint %in% c("ET-1post", "ET-2pre")), 
+            aes(group = 1), stat = "summary", fun = mean, 
+            linetype = "dashed", color = "white", linewidth = line.width.mean) +
+  scale_y_continuous(breaks = seq(from = 50, to = 300, by = 50)) +
+  scale_x_discrete(
+  labels = c(
+    "ET-1pre"  = "pre",
+    "ET-1post" = "post",
+    "ET-2pre"  = "pre",
+    "ET-2post" = "post"))+
+  theme_pubr() + 
+  theme(axis.line = element_line(linewidth = axis.width),
+        text = element_text(size = text.size)) +
+  labs(x = expression(" "),
+       y = expression("MMPO"[15-min]*"  (W) ")) +
+  
+  # allow drawing outside plotting panel
+    coord_cartesian(ylim = c(25, 300), clip = "off") +
+    
+   
+    annotate("text", x = 1.5, y = -17, label = expression(ET[1]), size = 3.3) +
+   annotate("text", x = 3.5, y = -17, label = expression(ET[2]), size = 3.3)
+
+
+fig.timepoints
+
+
+# Fit model and calculate 95% confidence intervals
+model <- lmer(change.pre.post ~ period + (1|id), data = test_data_long %>% filter(variable == "watt.15tt"))
+coefs <- broom.mixed::tidy(model, conf.int = TRUE) %>% print()
+
+
+# Filter for period2 coefficient and create plot
+fig.diff <- coefs %>%
+  filter(term == "period2") %>%
+  ggplot(aes(y = estimate, x = reorder(term, estimate))) +
+  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-4.06,ymax=4.06), fill="aliceblue") + # Adding colour to typical error = 4.06
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), linewidth = line.width.individual, width = errorbar.width.diff, color = "black") +
+  geom_point(size = point.size, color = "black") +
+  geom_hline(yintercept = 0, linetype = 2, linewidth = line.width.individual) +
+  scale_y_continuous(position = "right", limits = c(-7, 17), breaks = seq(from = -5, to = 15, by = 5)) +
+  theme_pubr() +
+  labs(x = expression(""), 
+       y = expression(~ Delta ~ " ET"[2] * "  vs. " ~ Delta ~  " ET"[1] * "  (W)"))+
+  theme(text=element_text(size=text.size)) +
+  theme(axis.text.x = element_blank(),  # Remove x-axis text
+        axis.ticks.x = element_blank(),  # Remove x-axis ticks
+        axis.line.x = element_blank(),  # Remove x-axis line
+        axis.title.x = element_blank(),  # Remove x-axis title
+        legend.position = "none")
+fig.diff
+
+
+# Making the graph smaller
+fig.diff <- plot_grid(empty, fig.diff, empty, 
+            nrow = 3, rel_heights = c(0.75, 4, 1.25), 
+            ncol = 1, align = "h")
+fig.diff
+
+
+# Adjust the plot margins
+fig.timepoints <- fig.timepoints + 
+  theme(plot.margin = margin(0.05, 0, 0.7, 0.05, "cm")) 
+
+fig.diff <- fig.diff + 
+  theme(plot.margin = margin(0.05, 0, 0, 0, "cm"))  
+
+# Combine the plots
+fig.watt.15tt.group <- plot_grid(fig.timepoints, fig.diff, 
+            nrow = 1, rel_widths = c(4, 1))
+fig.watt.15tt.group
+
+
+
+# MPOvo2max
+
+# Create plot showing mean and individual changes across training interventions
+fig.timepoints <- test_data_wide %>%
+  select(id, period, timepoint, watt.max) %>% 
+  mutate(timepoint = ifelse(period == 1 & timepoint == "pre", "ET-1pre", timepoint)) %>%
+  mutate(timepoint = ifelse(period == 1 & timepoint == "post", "ET-1post", timepoint)) %>%
+  mutate(timepoint = ifelse(period == 2 & timepoint == "pre", "ET-2pre", timepoint)) %>%
+  mutate(timepoint = ifelse(period == 2 & timepoint == "post", "ET-2post", timepoint)) %>%
+  mutate(timepoint = factor(timepoint, levels = c("ET-1pre", "ET-1post",  "ET-2pre", "ET-2post"))) %>% 
+  ggplot(., aes(x=timepoint, y=watt.max)) +
+  geom_line(aes(group = id), linewidth = line.width.individual, colour = "grey30", alpha = 0.3) +
+  stat_summary(aes(colour="mean",group=1), fun = mean, geom="line", linewidth = line.width.mean, colour = "black") +
+  geom_line(data = . %>% filter(timepoint %in% c("ET-1post", "ET-2pre")), 
+            aes(group = 1), stat = "summary", fun = mean, 
+            linetype = "dashed", color = "white", linewidth = line.width.mean) +
+  scale_y_continuous(breaks = seq(from = 100, to = 400, by = 50)) +
+  scale_x_discrete(
+  labels = c(
+    "ET-1pre"  = "pre",
+    "ET-1post" = "post",
+    "ET-2pre"  = "pre",
+    "ET-2post" = "post"))+
+  theme_pubr() + 
+  theme(axis.line = element_line(linewidth = axis.width),
+        text = element_text(size = text.size)) +
+  labs(x = expression(" "), 
+       y = expression("MMPO"[dot(V) * O[2 * max]] * " (W)")) +
+  
+  # allow drawing outside plotting panel
+    coord_cartesian(ylim = c(80, 400), clip = "off") +
+    
+   
+    annotate("text", x = 1.5, y = 30, label = expression(ET[1]), size = 3.3) +
+   annotate("text", x = 3.5, y = 30, label = expression(ET[2]), size = 3.3)
+
+fig.timepoints
+
+
+# Fit model and calculate 95% confidence intervals
+model <- lmer(change.pre.post ~ period + (1|id), data = test_data_long %>% filter(variable == "watt.max"))
+coefs <- broom.mixed::tidy(model, conf.int = TRUE) %>% print()
+
+
+# Filter for period2 coefficient and create plot showing difference in change score between periods
+fig.diff <- coefs %>%
+  filter(term == "period2") %>%
+  ggplot(aes(y = estimate, x = reorder(term, estimate))) +
+  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-6.96,ymax=6.96), fill="aliceblue") + # Adding colure to typical error = 6.96
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), linewidth = line.width.individual, width = errorbar.width.diff, color = "#8b104e") + # Make red to show that grater change in ET-2 compared to ET-1
+  geom_point(size = point.size, color = "#8b104e") +
+  geom_hline(yintercept = 0, linetype = 2, linewidth = line.width.individual) +
+  scale_y_continuous(position = "right", limits = c(-7, 17), breaks = seq(from = -5, to = 17, by = 5)) +
+  theme_pubr() +
+  labs(x = expression(""), 
+       y = expression(~ Delta ~ " ET"[2] * "  vs. " ~ Delta ~  " ET"[1] * "  (W)"))+
+  theme(text=element_text(size=text.size)) +
+  theme(axis.text.x = element_blank(),  # Remove x-axis text
+        axis.ticks.x = element_blank(),  # Remove x-axis ticks
+        axis.line.x = element_blank(),  # Remove x-axis line
+        axis.title.x = element_blank(),  # Remove x-axis title
+        legend.position = "none") 
+  
+fig.diff
+
+
+# Making the graph smaller
+fig.diff <- plot_grid(empty, fig.diff, empty, 
+            nrow = 3, rel_heights = c(0.75, 4, 1.25), 
+            ncol = 1, align = "h")
+fig.diff
+
+
+
+# Adjust the plot margins
+fig.timepoints <- fig.timepoints + 
+  theme(plot.margin = margin(0.05, 0, 0.7, 0.05, "cm")) 
+
+fig.diff <- fig.diff + 
+  theme(plot.margin = margin(0.05, 0, 0, 0, "cm"))  
+
+# Combine the plots
+fig.watt.max.group <- plot_grid(fig.timepoints, fig.diff, 
+            nrow = 1, rel_widths = c(4, 1))
+fig.watt.max.group
+
+
+
+# VO2max figure
+
+# Create plot showing mean and individual changes across training interventions
+fig.timepoints <- test_data_wide %>%
+  mutate(timepoint = ifelse(period == 1 & timepoint == "pre", "ET-1pre", timepoint)) %>%
+  mutate(timepoint = ifelse(period == 1 & timepoint == "post", "ET-1post", timepoint)) %>%
+  mutate(timepoint = ifelse(period == 2 & timepoint == "pre", "ET-2pre", timepoint)) %>%
+  mutate(timepoint = ifelse(period == 2 & timepoint == "post", "ET-2post", timepoint)) %>%
+  mutate(timepoint = factor(timepoint, levels = c("ET-1pre", "ET-1post",  "ET-2pre", "ET-2post"))) %>% 
+  ggplot(., aes(x=timepoint, y=vo2.max)) +
+  geom_line(aes(group = id), linewidth = line.width.individual, colour = "grey30", alpha = 0.3) +
+  stat_summary(aes(colour="mean",group=1), fun = mean, geom="line", linewidth = line.width.mean, colour = "black") +
+  geom_line(data = . %>% filter(timepoint %in% c("ET-1post", "ET-2pre")), 
+            aes(group = 1), stat = "summary", fun = mean, 
+            linetype = "dashed", color = "white", linewidth = line.width.mean) +
+  scale_y_continuous(breaks = seq(from = 1000, to = 5000, by = 1000)) +
+  scale_x_discrete(
+  labels = c(
+    "ET-1pre"  = "pre",
+    "ET-1post" = "post",
+    "ET-2pre"  = "pre",
+    "ET-2post" = "post"))+
+  theme_pubr() + 
+  theme(axis.line = element_line(linewidth = axis.width),
+        text = element_text(size = text.size)) +
+  labs(x = expression(" "),
+       y = expression(dot(V) * O[2 * max] * "  (mL ∙ min"^-1 * ") ")) +
+  
+  # allow drawing outside plotting panel
+    coord_cartesian(ylim = c(600, 5000), clip = "off") +
+    
+   
+    annotate("text", x = 1.5, y = -60, label = expression(ET[1]), size = 3.3) +
+   annotate("text", x = 3.5, y = -60, label = expression(ET[2]), size = 3.3)
+fig.timepoints
+
+
+# Fit model and calculate 95% confidence intervals
+model <- lmer(change.pre.post ~ period + (1|id), data = test_data_long %>% filter(variable == "vo2.max"))
+coefs <- broom.mixed::tidy(model, conf.int = TRUE) %>% print()
+
+
+# Filter for period2 coefficient and create plot
+fig.diff <- coefs %>%
+  filter(term == "period2") %>%
+  ggplot(aes(y = estimate, x = reorder(term, estimate))) +
+  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-61.1,ymax=61.1), fill="aliceblue") + # Adding colure to typical error = 61.1 ml/min
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), linewidth = line.width.individual, width = errorbar.width.diff, color = "black") +
+  geom_point(size = point.size, color = "black") +
+  geom_hline(yintercept = 0, linetype = 2, linewidth = line.width.individual) +
+  scale_y_continuous(position = "right", limits = c(-62, 110), breaks = seq(from = -50, to = 100, by = 50)) +
+  theme_pubr() +
+  labs(x = expression(""), 
+       y = expression(~ Delta ~ " ET"[2] * "  vs. " ~ Delta ~  " ET"[1] * "  (mL ∙ min"^-1 * ") "))+
+  theme(text=element_text(size=text.size)) +
+  theme(axis.text.x = element_blank(),  # Remove x-axis text
+        axis.ticks.x = element_blank(),  # Remove x-axis ticks
+        axis.line.x = element_blank(),  # Remove x-axis line
+        axis.title.x = element_blank(),  # Remove x-axis title
+        legend.position = "none")
+fig.diff
+
+# Making the graph smaller
+fig.diff <- plot_grid(empty, fig.diff, empty, 
+            nrow = 3, rel_heights = c(0.75, 4, 1.25), 
+            ncol = 1, align = "h")
+fig.diff
+
+
+# Adjust the plot margins
+fig.timepoints <- fig.timepoints + 
+  theme(plot.margin = margin(0.05, 0, 0.7, 0.05, "cm")) 
+
+fig.diff <- fig.diff + 
+  theme(plot.margin = margin(0.05, 0, 0, 0, "cm"))  
+
+# Combine the plots
+fig.vo2.max.group <- plot_grid(fig.timepoints, fig.diff, 
+            nrow = 1, rel_widths = c(4, 1))
+fig.vo2.max.group
+
+
+
+
+# Combining figures in long format
+figure.4.a.b.c <- plot_grid(fig.watt.15tt.group, fig.watt.max.group, fig.vo2.max.group,
+                       ncol = 1, rel_widths = c(1, 1, 1),
+                       nrow = 3, rel_heights = c(1, 1, 1),
+                       align = "v") +
+  
+  # Name panels
+  draw_plot_label(x = c(0, 0, 0), 
+                  y = c(0.99, 0.657, 0.325), 
+                  label = c("A", "B", "C"), 
+                  size = text.size) 
+
+figure.4.a.b.c
+
+
+
+```
+
+
+
+### Panels D-F: individual and group mean change scores in period 2 and 2
+
+```{r}
+#| label: Figure 4 D-F
+
+# Saving sizes and widths of points and lines so easy to adjust
+point.size = 0.2
+line.width = 0.3
+line.width.individual = 0.3
+line.width.mean = 0.5
+axis.width = 0.4
+text.size = 9
+
+
+# Create a dummy plot to serve as empty space
+empty <- ggplot() + theme_void()
+
+
+# PO15min
+
+fig.watt.15tt.change <- test_data_long %>%
+  mutate(period = ifelse(period == 1, "ET-1", period)) %>%
+  mutate(period = ifelse(period == 2, "ET-2", period)) %>%
+  
+  filter(variable == "watt.15tt") %>% 
+  ggplot(aes(x=period, y=change.pre.post)) +
+  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-4.06,ymax=4.06), fill="aliceblue") + # Adding colure to typical error = 4.06
+  geom_hline(yintercept = 0, linetype = "dashed", linewidth = line.width.individual, colour = "black") +
+  geom_line(aes(group = id), linewidth = line.width.individual, colour = "grey30", alpha = 0.3) +
+  theme_pubr() +
+  stat_summary(aes(colour="mean",group=1), fun = mean, geom="line", linewidth = line.width.mean, colour = "black") +
+
+  scale_y_continuous(limits = c(-20, 70), breaks = seq(from = -20, to = 70, by = 10)) +
+  scale_x_discrete(
+    labels = c(
+    "ET-1"  = expression("ET"[1]),
+    "ET-2" = expression("ET"[2]))) +
+  
+  labs(x = "Training period", y = expression(~ Delta ~ "MMPO"[15-min]*"  (W)")) +
+  theme_pubr() +
+  theme(axis.line = element_line(linewidth = axis.width),
+        text = element_text(size = text.size),
+        axis.title.x = element_blank(),
+        legend.position = "none") 
+fig.watt.15tt.change
+
+fig.watt.15tt.change <- fig.watt.15tt.change + 
+  theme(plot.margin = margin(0.05, 0, 0, 0.05, "cm"))
+
+
+
+# POvomax
+
+fig.watt.max.change <- test_data_long %>%  
+  mutate(period = ifelse(period == 1, "ET-1", period)) %>%
+  mutate(period = ifelse(period == 2, "ET-2", period)) %>%
+  
+  filter(variable == "watt.max") %>% 
+  ggplot(aes(x=period, y=change.pre.post)) +
+  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-6.96,ymax=6.96), fill="aliceblue") + # Adding colure to typical error = 6.96
+  geom_hline(yintercept = 0, linetype = "dashed", linewidth = line.width.individual, colour = "black") +
+
+  geom_line(aes(group = id), linewidth = line.width.individual, colour = "grey30", alpha = 0.3) +
+  stat_summary(aes(colour="mean",group=1), fun = mean, geom="line", linewidth = line.width.mean, colour = "black") +
+  scale_y_continuous(limits = c(-20, 70), breaks = seq(from = -20, to = 70, by = 10)) +
+  scale_x_discrete(
+    labels = c(
+    "ET-1"  = expression("ET"[1]),
+    "ET-2" = expression("ET"[2]))) +
+  
+  labs(x = "Training period", y = expression(~ Delta ~ "MMPO"[dot(V) * O[2 * max]] * " (W)")) +
+  theme_pubr() +
+  theme(axis.line = element_line(linewidth = axis.width),
+        text = element_text(size = text.size),
+        axis.title.x = element_blank()) 
+fig.watt.max.change
+
+fig.watt.max.change <- fig.watt.max.change + 
+  theme(plot.margin = margin(0.05, 0, 0, 0.05, "cm"))
+
+
+
+# VO2max
+
+fig.vo2.max.change <- test_data_long %>% 
+  mutate(period = ifelse(period == 1, "ET-1", period)) %>%
+  mutate(period = ifelse(period == 2, "ET-2", period)) %>%
+  
+  filter(variable == "vo2.max") %>% 
+  ggplot(aes(x=period, y=change.pre.post)) +
+  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-61.1,ymax=61.1), fill="aliceblue") + # Adding colure to typical error = 61.1 ml/min
+  geom_hline(yintercept = 0, linetype = "dashed", linewidth = line.width.individual, colour = "black") +
+  geom_line(aes(group = id), linewidth = line.width.individual, colour = "grey30", alpha = 0.3) +
+  stat_summary(aes(colour="mean",group=1), fun = mean, geom="line", linewidth = line.width.mean, colour = "black") +
+  scale_y_continuous(limits = c(-200, 700), breaks = seq(from = -200, to = 700, by = 100)) +
+  
+  scale_x_discrete(
+    labels = c(
+    "ET-1"  = expression("ET"[1]),
+    "ET-2" = expression("ET"[2]))) +
+  
+  labs(x = "Training period", y = expression(~ Delta ~ dot(V) * O[2 * max] * "  (mL ∙ min"^-1 * ") ")) +
+  theme_pubr() +
+  theme(axis.line = element_line(linewidth = axis.width),
+        text = element_text(size = text.size),
+        axis.title.x = element_blank()) 
+fig.vo2.max.change 
+
+fig.vo2.max.change <- fig.vo2.max.change + 
+  theme(plot.margin = margin(0.05, 0, 0, 0.05, "cm"))
+
+
+
+
+# Figure 4 D-F:  MMPO15min, MPOvo2max, and VO2max
+figure.4.d.e.f <- plot_grid(fig.watt.15tt.change, empty, fig.watt.max.change, empty, fig.vo2.max.change,
+                       ncol = 1, rel_widths = c(1, 1, 1, 1, 1, 1),
+                       nrow = 6, rel_heights = c(1, 0.095, 1, 0.095, 1, 0.095),
+                       align = "v") +
+  
+  # Name panels
+  draw_plot_label(x = c(0, 0, 0), 
+                  y = c(0.99, 0.657, 0.325),
+                  label = c("D", "E", "F"), 
+                  size = text.size) 
+figure.4.d.e.f
+
+
+```
+
+
+### Combining panels to one figure
+
+
+```{r}
+#| label: Figure 4 A-F
+
+figure.4 <- plot_grid(figure.4.a.b.c, empty, figure.4.d.e.f,
+                             ncol = 3, rel_widths = c(1, 0.05, 0.6), rel_heights = c(1, 1, 1))
+
+figure.4
+
+saveRDS(figure.4, "./figures/rds/figure.4.RDS")
+
+ggsave("figures/figure.4.png", plot = figure.4, width =18, height = 28, 
+       dpi = 800,
+       units = "cm", device= png())
+
+
+```
+
+
+
+

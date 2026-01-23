@@ -1,0 +1,202 @@
+---
+title: "activity-level-analysis"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+
+
+```{r}
+#| label: Packages 
+
+# Loading needed packages
+source("./R/libs.R")
+
+# Read the RDS files containing the data
+## Self-reported level of recreational activity
+activity_questionnaire_data <- readRDS(file = "data/derivedData/activity_questionnaire_data")
+
+```
+
+
+### Mean and individual reproducibility of recreational activity level
+
+Kcal/week used on recreational activities
+
+```{r}
+#| label: Mean and individual reproducibility of recreational activity level
+
+# Selecting variables of interest
+activity.p1.washout.p2 <- activity_questionnaire_data %>% 
+    select(id, timepoint, recreational.activities) %>% 
+  filter((timepoint %in% c("period1", "washout", "period2"))) 
+
+
+## Comparing recreational activities (kcal/week) in period 1, wash-out, and period 2 using a linear mixed model
+model <- lmer(recreational.activities ~ timepoint + (1|id), data = activity.p1.washout.p2) 
+coefs <- broom.mixed::tidy(model, conf.int = TRUE)
+pairs(emmeans(model, specs = "timepoint"))
+
+
+## Mean (sd) kcal/week for household work, recreational activities, and total activity in ET-1, detraining, and ET-2 to put in text
+table.activity <- activity.p1.washout.p2 %>% 
+  group_by(timepoint) %>% 
+  
+  summarise(across(recreational.activities,
+                   list(mean_sd = ~sprintf("%.0f (%.0f)", mean(.x, na.rm = TRUE), sd(.x, na.rm = TRUE))),
+                   .names = "{.col}"))
+
+print(table.activity)
+
+
+
+## Reproducibility of individual physical activity level
+
+# Outcomes to analyse
+recreational_activities_data <- activity_questionnaire_data %>% 
+  select(id, timepoint, recreational.activities) %>% 
+  filter(timepoint %in% c("period1", "period2")) %>% 
+  mutate(
+    period = recode(timepoint,
+                    "period1" = "1",
+                    "period2" = "2"),
+    variable = "recreational.activities",
+    value = recreational.activities
+  ) %>% 
+  select(id, period, variable, value)
+  
+
+# Outcomes to analyse
+outcomes <- c("recreational.activities") 
+
+
+## Intraclass correlation
+
+# Function to estimate ICCs with bootstrap CIs
+analyze_trainability_icc_ci <- function(
+  data,
+  outcome,
+  nboot = 1000,
+  seed  = 123
+) {
+
+  message("Running model for: ", outcome)  # Progress message for tracking
+
+  # Subset data to the current outcome and ensure correct factor structure
+  df <- data %>%
+    filter(variable == outcome) %>%
+    mutate(
+      period = factor(period),  # Training period as categorical fixed effect
+      id     = factor(id)        # Participant ID as grouping factor
+    ) %>% 
+    filter(!is.na(value))
+
+  # Skip analysis if too few observations are available
+  if (nrow(df) < 5) {
+    warning("Too few observations for ", outcome)
+    return(NULL)
+  }
+
+  # Fit linear mixed-effects model to change scores
+  # Fixed effect: training period (adjusts for systematic differences)
+  # Random intercept: participant ID (captures between-individual variability)
+  mod <- lmer(
+    value ~ 1 + (1 | id),
+    data = df,
+    REML = TRUE  # REML provides less biased variance component estimates
+  )
+
+  # Function to extract ICC from a fitted mixed-effects model
+  extract_icc <- function(fit) {
+    vc <- as.data.frame(VarCorr(fit))         # Extract variance components
+    vb <- vc$vcov[vc$grp == "id"]              # Between-individual variance
+    vw <- vc$vcov[vc$grp == "Residual"]        # Within-individual variance
+    vb / (vb + vw)                             # ICC calculation
+  }
+
+  # Compute point estimate of the ICC
+  ICC_between <- extract_icc(mod)
+
+  
+  # Parametric bootstrap to obtain 95% CI for ICC
+  boot_res <- tryCatch(
+    bootMer(
+      mod,
+      FUN   = extract_icc,     # Statistic to bootstrap (ICC)
+      nsim  = nboot,           # Number of bootstrap replicates
+      use.u = TRUE,            # Preserve random-effects structure
+      type  = "parametric",    # Parametric bootstrap
+      seed  = seed
+    ),
+    error = function(e) NULL   # Gracefully handle bootstrap failures
+  )
+
+  # Extract percentile-based 95% confidence interval
+  ci <- if (!is.null(boot_res)) {
+    quantile(
+      boot_res$t[, 1],
+      probs = c(0.025, 0.975),
+      na.rm = TRUE
+    )
+  } else {
+    c(NA, NA)                  # Return NA if CI cannot be estimated
+  }
+
+  # Return tidy summary for the current outcome
+  tibble(
+    Variable         = outcome,
+    ICC_between      = ICC_between,
+    ICC_between_low  = ci[1],
+    ICC_between_high = ci[2]
+  )
+}
+
+
+# Run ICC analysis across all outcomes
+results_icc <- map_dfr(
+  outcomes,                     # Vector of outcome variable names
+  analyze_trainability_icc_ci,  # Analysis function
+  data  = recreational_activities_data,       # Long-format dataset
+  nboot = 1000                   # Number of bootstrap replicates
+)
+
+
+# Format ICC results for presentation
+icc_summary <- results_icc %>%
+  mutate(
+    `ICC Between` = sprintf(
+      "%.2f [%.2f, %.2f]",      # Format ICC with 95% CI
+      ICC_between,
+      ICC_between_low,
+      ICC_between_high
+    )
+  ) %>%
+  select(Variable, `ICC Between`)  # Keep only relevant columns
+
+# Print final table
+print(icc_summary, width = Inf)
+
+
+## Pearsons correlation
+
+r_data <- activity_questionnaire_data %>% 
+  select(id, timepoint, recreational.activities) %>% 
+  filter(timepoint %in% c("period1", "period2")) %>% 
+  filter(!is.na(recreational.activities)) %>% 
+  pivot_wider(names_from = timepoint,
+              values_from = recreational.activities) %>%
+  subset(select = -id) %>%
+  print()
+
+# Pearson r
+pearsons.r <- r_data %>% 
+  {cor.test(.$period1, .$period2, method = "pearson")} %>%
+  print()
+
+
+```
+
+
+

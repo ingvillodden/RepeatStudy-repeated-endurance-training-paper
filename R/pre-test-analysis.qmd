@@ -1,0 +1,305 @@
+---
+title: "pre-test-analysis"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+#| label: Packages 
+
+# Loading needed packages
+source("./R/libs.R")
+
+
+# Read the RDS files containing the data
+
+## CV calculation data (for variables watt.15tt, watt.max, and vo2.max) 
+cv_calculation_cycling_data_p1_p2 <- readRDS(file = "data/derivedData/cv_calculation_cycling_data_p1_p2")
+
+## Test data
+test_data_long <- readRDS(file = "data/derivedData/test_data_long")
+
+```
+
+## Pre-test analysis
+
+1.  Test-retest reliability
+
+2.  Reproducibility of individual pre-test values
+
+### 1. Reliability of duplicate pre-tests
+
+Percentage coefficient of variation (CV) of duplicate pre-tests were calculated using the guidelines provided by Hopkins (2000). Measures of Reliability in Sports Medicine and Science. Sports Med 30, 1–15 (2000). https://doi.org/10.2165/00007256-200030010-00001 Typical error of measurement (TE) is also calculated.
+
+```{r}
+#| label: Test-retest reliability
+
+# Function to calculate CV and TE for multiple variables, grouping by id and period
+
+calculate_reliability <- function(data, period_filter = NULL, variables) { 
+  # Filter data by period, when a filter is provided
+  data_filtered <- if (!is.null(period_filter)) {
+    data %>% filter(period == period_filter)
+  } else {
+    data
+  }
+  
+  # Loop over each variable in the "variables" vector
+  results <- lapply(variables, function(var) {
+    # Prepare the data for reliability calculations
+    reliability_data <- data_filtered %>%
+      select(id, period, timepoint, !!sym(var)) %>%
+      group_by(id, period, timepoint) %>% # Group by id, period, and timepoint
+      summarise(value = mean(!!sym(var), na.rm = TRUE), .groups = 'drop') %>% # Calculate mean by group
+      pivot_wider(names_from = timepoint, values_from = value) %>% # Reshape data to wide format
+      filter(complete.cases(pre1, pre2)) # Remove rows with NA values for pre1 and pre2
+    
+    # Calculate differences and reliability metrics
+    reliability_metrics <- reliability_data %>%
+      mutate(diff = pre2 - pre1) %>%  # Calculate the difference between pre2 and pre1
+      summarise(
+        s = sd(diff),                 # Standard deviation of the differences
+        m = mean(rowMeans(cbind(pre1, pre2))), # Mean of pre1 and pre2
+        te = s / sqrt(2),             # Typical error (TE)
+        cv = 100 * (te / m)           # Coefficient of variation (CV) as a percentage
+      )
+    
+
+    
+    reliability_metrics <- reliability_metrics %>%
+      mutate(
+        variable = var               # Add the variable name as a column
+      )
+    
+    reliability_metrics
+  })
+  
+  # Combine results for all variables into one data frame
+  bind_rows(results)
+}
+
+# List of variables to calculate CV and TE for
+variables <- c("vo2.max", "watt.max", "watt.15tt") # Only measures with double pre-tests
+
+# Apply the function to calculate CV and TE for each period and both periods combined
+reliability_p1 <- calculate_reliability(cv_calculation_cycling_data_p1_p2, period_filter = 1, variables = variables)  
+# For period 1
+
+reliability_p2 <- calculate_reliability(cv_calculation_cycling_data_p1_p2, period_filter = 2, variables = variables)  
+# For period 2
+
+reliability_combined <- calculate_reliability(cv_calculation_cycling_data_p1_p2, variables = variables)  
+# For both period 1 and 2
+
+# Print results
+print(reliability_p1)       # Results for period 1
+print(reliability_p2)       # Results for period 2
+print(reliability_combined)  # Results for both period 1 and 2
+
+
+```
+
+### 2. Reproducibility of individual pre-test values
+
+To assess the reproducibility of participants’ initial fitness level (pre-values), between ET1 and ET2, ICCs were estimated using linear mixed-effects models (lme4 package). For each outcome, a model was fitted on the form: outcome \~ 1 + (1 \| id) with participant id included as a random intercept to model between-individual differences in the outcome. In this model, the variance of the random intercept represents between individual variability, while the residual variance represents within-individual variability between training periods. ICCs were calculated as: ICC=σ_between/(σ_between+σ_within ) representing the proportion of total variance attributable to between-individual differences. Higher ICC estimates indicate greater consistency within individuals (i.e., low within-individual variability) and more stable differences between individuals (i.e., high between-individual variability). Bootstrapped 95% confidence intervals (CIs) for ICC estimates were computed using the bootMer function with 1000 resamples (lme4 package). The 95% CIs were interpreted as indicating poor (\< 0.50), moderate (0.50-0.75), good (0.75-0.90), or excellent (\>0.90) (Koo & Li, 2016).
+
+Pearson´s correlation coefficients (r) with 95% CIs (R stats package) were used to examine associations between participants’ change scores, initial fitness level, recreational activity, and training load in ET1 and ET2.
+
+```{r}
+#| label: Reproducibility of individual pre-test values
+
+
+# Outcomes to analyse
+
+outcomes <- c("watt.max", "watt.15tt", "vo2.max", "p.vo2.15tt", "ge.submax", 
+               "hbmass", "bv", "rbcv", "pv", "hct", "hb.c",
+               "weight", "lean.mass.whole.body", 
+               "ferritin.level",
+               "fiber.area", "cd", "cf"
+               ) 
+
+
+## Intraclass correlation coefficients
+
+# Function to estimate ICCs with bootstrap CIs
+analyze_trainability_icc_ci <- function(
+  data,
+  outcome,
+  nboot = 1000, # 1000 resamples
+  seed  = 123
+) {
+
+  message("Running model for: ", outcome)  # Progress message for tracking
+
+  # Subset data to the current outcome and ensure correct factor structure
+  df <- data %>%
+    filter(variable == outcome) %>%
+    mutate(
+      period = factor(period),  # Training period as categorical fixed effect
+      id     = factor(id)       # Participant ID as grouping factor
+    ) %>% 
+    filter(!is.na(pre))
+  
+
+  # Skip analysis if too few observations are available
+  if (nrow(df) < 5) {
+    warning("Too few observations for ", outcome)
+    return(NULL)
+  }
+
+  
+  # Fit linear mixed-effects model to change scores
+  # Fixed effect: training period (adjusts for systematic differences)
+  # Random intercept: participant ID (captures between-individual variability)
+  mod <- lmer(
+    pre ~ 1 + (1 | id),
+    data = df,
+    REML = TRUE  # REML provides less biased variance component estimates
+  )
+summary(mod)
+  # Function to extract ICC from a fitted mixed-effects model
+  extract_icc <- function(fit) {
+    vc <- as.data.frame(VarCorr(fit))         # Extract variance components
+    vb <- vc$vcov[vc$grp == "id"]             # Between-individual variance
+    vw <- vc$vcov[vc$grp == "Residual"]       # Within-individual variance
+    vb / (vb + vw)                            # ICC calculation
+  }
+
+  # Compute point estimate of the ICC
+  ICC_between <- extract_icc(mod)
+
+  
+  # Parametric bootstrap to obtain 95% CI for ICC
+  boot_res <- tryCatch(
+    bootMer(
+      mod,
+      FUN   = extract_icc,     # Statistic to bootstrap (ICC)
+      nsim  = nboot,           # Number of bootstrap replicates
+      use.u = TRUE,            # Preserve random-effects structure
+      type  = "parametric",    # Parametric bootstrap
+      seed  = seed
+    ),
+    error = function(e) NULL   # Gracefully handle bootstrap failures
+  )
+
+  # Extract percentile-based 95% confidence interval
+  ci <- if (!is.null(boot_res)) {
+    quantile(
+      boot_res$t[, 1],
+      probs = c(0.025, 0.975),
+      na.rm = TRUE
+    )
+  } else {
+    c(NA, NA)                  # Return NA if CI cannot be estimated
+  }
+
+  # Return tidy summary for the current outcome
+  tibble(
+    Variable         = outcome,
+    ICC_between      = ICC_between,
+    ICC_between_low  = ci[1],
+    ICC_between_high = ci[2]
+  )
+}
+
+
+# Run ICC analysis across all outcomes
+results_icc <- map_dfr(
+  outcomes,                     # Vector of outcome variable names
+  analyze_trainability_icc_ci,  # Analysis function
+  data  = test_data_long,       # Long-format dataset
+  nboot = 1000                  # Number of bootstrap replicates
+)
+
+
+# Format ICC results for presentation
+icc_summary <- results_icc %>%
+  mutate(
+    `ICC Between` = sprintf(
+      "%.2f [%.2f, %.2f]",      # Format ICC with 95% CI
+      ICC_between,
+      ICC_between_low,
+      ICC_between_high
+    )
+  ) %>%
+  select(Variable, `ICC Between`)  # Keep only relevant columns
+
+# Print final table
+print(icc_summary, width = Inf)
+
+
+
+## Pearsons r
+
+# Data frame to store results
+results <- data.frame(
+  variable = character(),
+  r_CI_lower = numeric(),
+  r_CI_upper = numeric(),
+  pearsons_r = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Function to process each variable
+# Selecting pre values
+process_variable <- function(data, var_name) {
+  repeated_data <- data %>%
+    filter(variable == var_name) %>%
+    select(id, period, variable, pre) %>%
+    filter(!is.na(pre)) %>% 
+    pivot_wider(names_from = period, values_from = pre) %>%
+    select(id, "1", "2") %>%
+    rename(period.1 = `1`, period.2 = `2`) %>%
+    subset(select = -id) %>%
+    subset(select = -variable)
+  
+  print(repeated_data)
+  
+  
+  # Pearsons r
+  pearsons_r <- cor.test(repeated_data$period.1, repeated_data$period.2, method = "pearson")
+  print(pearsons_r)
+  
+  
+  # Extract r value and confidence intervals, and round to 2 decimals
+  r_value <- round(pearsons_r$estimate, 2)
+  r_ci_lower <- round(pearsons_r$conf.int[1], 2)
+  r_ci_upper <- round(pearsons_r$conf.int[2], 2)
+  
+  # Append results to the data frame
+  results <<- rbind(results, data.frame(
+    variable = var_name,
+    pearsons_r = r_value,
+    r_CI_lower = r_ci_lower,
+    r_CI_upper = r_ci_upper,
+    stringsAsFactors = FALSE
+  ))
+}
+
+# Applying the function to each variable
+for (var in outcomes) {
+  cat("Processing variable:", var, "\n")
+  process_variable(test_data_long, var)
+}
+
+
+# Format r results for presentation
+r_summary <- results %>%
+  mutate(
+    `Pearsons r` = sprintf(
+      "%.2f [%.2f, %.2f]",      # Format ICC with 95% CI
+      pearsons_r,
+      r_CI_lower,
+      r_CI_upper
+    )
+  ) %>%
+  select(variable, `Pearsons r`)  # Keep only relevant columns
+
+
+# Print the results data frame
+print(r_summary)
+
+
+```

@@ -1,0 +1,642 @@
+---
+title: "training-characteristics-figure3"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r}
+#| label: Packages 
+
+# Loading needed packages
+source("./R/libs.R")
+
+
+# Read the RDS files containing the data
+## Exercise training data
+session_data <- readRDS(file = "data/derivedData/session_data")
+
+
+```
+
+
+
+### Figure 3: Individual reproducibility of training characteristics
+
+Creating a figure with nine panels, showing reproducibility of mean PO, mean RPE, and mean % of HRmax for the 4x5-min, 4x8-min, and 6x6-min interval sessions, respectively.
+
+```{r}
+#| label: Figure 3
+
+# Saving sizes and widths of points and lines so easy to adjust
+point.size = 0.8
+line.width = 0.5
+line.width.dashed = 0.3
+text.size = 8
+title.text.size = 8
+reproducibility.text.size = 7
+
+
+# Prepare data
+session_fig_data <-  session_data %>% 
+  filter(!is.na(session.type)) %>%
+  group_by(id, period, session.type) %>% 
+  summarise(mean.session.watt = mean(session.watt, na.rm = TRUE),
+            mean.session.watt.max.percentage = mean(session.watt.max.percentage, na.rm = TRUE),
+            mean.session.rpe = mean(session.rpe, na.rm = TRUE),
+            
+            mean.session.hr = mean(session.hr, na.rm = TRUE),
+            mean.session.hr.max.percentage = mean(session.hr.max.percentage, na.rm = TRUE))
+
+
+
+# RPE
+
+# RPE 4x5
+fig.corr.session.rpe.4x5 <- session_fig_data %>% 
+  filter(session.type == "4x5") %>%
+  select(id, period, mean.session.rpe) %>% 
+  pivot_wider(names_from = period,
+              values_from = mean.session.rpe) %>% 
+  select(id, "1", "2") %>% 
+  ggplot(., aes(x=`1`, y=`2`)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed",   linewidth=line.width.dashed, color = "navy") + # Add perfect correlation line
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", colour = "black", linewidth=line.width) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(14, 20), breaks = seq(from = 15, to = 20, by = 1)) +
+  scale_x_continuous(limits = c(14, 20), breaks = seq(from = 15, to = 20, by = 1)) +
+  labs(x = expression("ET"[1] * "  RPE (6-20)"), 
+       y = expression("ET"[2] * "  RPE (6-20)")) +
+  theme(text=element_text(size=text.size)) +
+  guides(y = guide_axis_truncated(
+    trunc_lower = c(Inf, 14.1),
+    trunc_upper = c(14.25, -Inf)),
+    x = guide_axis_truncated(
+    trunc_lower = c(Inf, 14.1),
+    trunc_upper = c(14.25, -Inf))) 
+fig.corr.session.rpe.4x5
+
+
+# RPE 4x8
+fig.corr.session.rpe.4x8 <- session_fig_data %>% 
+  filter(session.type == "4x8") %>%
+  select(id, period, mean.session.rpe) %>% 
+  pivot_wider(names_from = period,
+              values_from = mean.session.rpe) %>% 
+  select(id, "1", "2") %>% 
+  ggplot(., aes(x=`1`, y=`2`)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed, color = "navy") + 
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", colour = "black", linewidth=line.width) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(14, 19), breaks = seq(from = 15, to = 19, by = 1)) +
+  scale_x_continuous(limits = c(14, 19), breaks = seq(from = 15, to = 19, by = 1)) +
+  labs(x = expression("ET"[1] * "  RPE (6-20)"), 
+       y = expression("ET"[2] * "  RPE (6-20)")) +
+  theme(text=element_text(size=text.size)) +
+  guides(y = guide_axis_truncated(
+    trunc_lower = c(Inf, 14.1),
+    trunc_upper = c(14.25, -Inf)),
+    x = guide_axis_truncated(
+    trunc_lower = c(Inf, 14.1),
+    trunc_upper = c(14.25, -Inf)))
+fig.corr.session.rpe.4x8
+
+
+# RPE 6x6
+fig.corr.session.rpe.6x6 <- session_fig_data %>% 
+  filter(session.type == "6x6") %>%
+  select(id, period, mean.session.rpe) %>% 
+  pivot_wider(names_from = period,
+              values_from = mean.session.rpe) %>% 
+  select(id, "1", "2") %>% 
+  ggplot(., aes(x=`1`, y=`2`)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed, color = "navy") +
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", colour = "black", linewidth=line.width) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(11, 16), breaks = seq(from = 12, to = 16, by = 1)) +
+  scale_x_continuous(limits = c(11, 16), breaks = seq(from = 12, to = 16, by = 1)) +
+  labs(x = expression("ET"[1] * "  RPE (6-20)"), 
+       y = expression("ET"[2] * "  RPE (6-20)")) +
+  theme(text=element_text(size=text.size)) +
+  guides(y = guide_axis_truncated(
+    trunc_lower = c(Inf, 11.1),
+    trunc_upper = c(11.25, -Inf)),
+    x = guide_axis_truncated(
+    trunc_lower = c(Inf, 11.1),
+    trunc_upper = c(11.25, -Inf)))
+fig.corr.session.rpe.6x6
+
+
+
+
+# Power output
+
+# PO 4x5
+fig.corr.session.watt.4x5 <- session_fig_data %>% 
+  filter(session.type == "4x5") %>%
+  select(id, period, mean.session.watt) %>% 
+  pivot_wider(names_from = period,
+              values_from = mean.session.watt) %>% 
+  select(id, "1", "2") %>% 
+  ggplot(., aes(x=`1`, y=`2`)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed, color = "navy") +
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", colour = "black", linewidth=line.width) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(25, 210), breaks = seq(from = 50, to = 210, by = 50)) +
+  scale_x_continuous(limits = c(25, 210), breaks = seq(from = 50, to = 210, by = 50)) +
+  labs(x = expression("ET"[1] * "  PO (W)"), 
+       y = expression("ET"[2] * "  PO (W)")) +
+  theme(text=element_text(size=text.size)) +
+  guides(y = guide_axis_truncated(
+    trunc_lower = c(Inf, 30),
+    trunc_upper = c(35, -Inf)),
+    x = guide_axis_truncated(
+    trunc_lower = c(Inf, 30),
+    trunc_upper = c(35, -Inf)))
+fig.corr.session.watt.4x5
+
+
+# PO 4x8
+fig.corr.session.watt.4x8 <- session_fig_data %>% 
+  filter(session.type == "4x8") %>%
+  select(id, period, mean.session.watt) %>% 
+  pivot_wider(names_from = period,
+              values_from = mean.session.watt) %>% 
+  select(id, "1", "2") %>% 
+  ggplot(., aes(x=`1`, y=`2`)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed, color = "navy") +
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", colour = "black", linewidth=line.width) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(25, 225), breaks = seq(from = 50, to = 225, by = 50)) +
+  scale_x_continuous(limits = c(25, 225), breaks = seq(from = 50, to = 225, by = 50)) +
+  labs(x = expression("ET"[1] * "  PO (W)"), 
+       y = expression("ET"[2] * "  PO (W)")) +
+  theme(text=element_text(size=text.size)) +
+  guides(y = guide_axis_truncated(
+    trunc_lower = c(Inf, 30),
+    trunc_upper = c(35, -Inf)),
+    x = guide_axis_truncated(
+    trunc_lower = c(Inf, 30),
+    trunc_upper = c(35, -Inf)))
+fig.corr.session.watt.4x8
+
+
+# PO 6x6
+fig.corr.session.watt.6x6 <- session_fig_data %>% 
+  filter(session.type == "6x6") %>%
+  select(id, period, mean.session.watt) %>% 
+  pivot_wider(names_from = period,
+              values_from = mean.session.watt) %>% 
+  select(id, "1", "2") %>% 
+  ggplot(., aes(x=`1`, y=`2`)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed, color = "navy") +
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", colour = "black", linewidth=line.width) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(25, 200), breaks = seq(from = 50, to = 200, by = 50)) +
+  scale_x_continuous(limits = c(25, 200), breaks = seq(from = 50, to = 200, by = 50)) +
+  labs(x = expression("ET"[1] * "  PO (W)"), 
+       y = expression("ET"[2] * "  PO (W)")) +
+  theme(text=element_text(size=text.size))  +
+  guides(y = guide_axis_truncated(
+    trunc_lower = c(Inf, 30),
+    trunc_upper = c(35, -Inf)),
+    x = guide_axis_truncated(
+    trunc_lower = c(Inf, 30),
+    trunc_upper = c(35, -Inf)))
+fig.corr.session.watt.6x6
+
+
+# % of POvo2max
+
+# % of POvo2max 4x5
+fig.corr.session.watt.max.percentage.4x5 <- session_fig_data %>% 
+  filter(session.type == "4x5") %>%
+  select(id, period, mean.session.watt.max.percentage) %>% 
+  pivot_wider(names_from = period,
+              values_from = mean.session.watt.max.percentage) %>% 
+  select(id, "1", "2") %>% 
+  ggplot(., aes(x=`1`, y=`2`)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed, color = "navy") +
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", colour = "black", linewidth=line.width) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(42, 60), breaks = seq(from = 45, to = 60, by = 5)) +
+  scale_x_continuous(limits = c(42, 60), breaks = seq(from = 45, to = 60, by = 5)) +
+  labs(x = expression("ET"[1] * " % of MMPO"[dot(V) * O[2 * max]] * " (%)"),
+       y = expression("ET"[2] * " % of MMPO"[dot(V) * O[2 * max]] * " (%)")) +
+  theme(text=element_text(size=text.size)) +
+  guides(y = guide_axis_truncated(
+    trunc_lower = c(Inf, 42),
+    trunc_upper = c(42.5, -Inf)),
+    x = guide_axis_truncated(
+    trunc_lower = c(Inf, 42),
+    trunc_upper = c(42.5, -Inf)))
+fig.corr.session.watt.max.percentage.4x5
+
+
+# % of POvo2max 4x8
+fig.corr.session.watt.max.percentage.4x8 <- session_fig_data %>% 
+  filter(session.type == "4x8") %>%
+  select(id, period, mean.session.watt.max.percentage) %>% 
+  pivot_wider(names_from = period,
+              values_from = mean.session.watt.max.percentage) %>% 
+  select(id, "1", "2") %>% 
+  ggplot(., aes(x=`1`, y=`2`)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed, color = "navy") +
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", colour = "black", linewidth=line.width) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(46, 70), breaks = seq(from = 50, to = 70, by = 5)) +
+  scale_x_continuous(limits = c(46, 70), breaks = seq(from = 50, to = 70, by = 5)) +
+  labs(x = expression("ET"[1] * " % of MMPO"[dot(V) * O[2 * max]] * " (%)"),
+       y = expression("ET"[2] * " % of MMPO"[dot(V) * O[2 * max]] * " (%)")) +
+  theme(text=element_text(size=text.size)) +
+  guides(y = guide_axis_truncated(
+    trunc_lower = c(Inf, 46),
+    trunc_upper = c(46.8, -Inf)),
+    x = guide_axis_truncated(
+    trunc_lower = c(Inf, 46),
+    trunc_upper = c(46.8, -Inf)))
+fig.corr.session.watt.max.percentage.4x8
+
+
+# % of POvo2max 6x6
+fig.corr.session.watt.max.percentage.6x6 <- session_fig_data %>% 
+  filter(session.type == "6x6") %>%
+  select(id, period, mean.session.watt.max.percentage) %>% 
+  pivot_wider(names_from = period,
+              values_from = mean.session.watt.max.percentage) %>% 
+  select(id, "1", "2") %>% 
+  ggplot(., aes(x=`1`, y=`2`)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed, color = "navy") +
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", colour = "black", linewidth=line.width) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(37, 55), breaks = seq(from = 40, to = 55, by = 5)) +
+  scale_x_continuous(limits = c(37, 55), breaks = seq(from = 40, to = 55, by = 5)) +
+  labs(x = expression("ET"[1] * " % of MMPO"[dot(V) * O[2 * max]] * " (%)"),
+       y = expression("ET"[2] * " % of MMPO"[dot(V) * O[2 * max]] * " (%)")) +
+  theme(text=element_text(size=text.size))  +
+  guides(y = guide_axis_truncated(
+    trunc_lower = c(Inf, 37),
+    trunc_upper = c(37.5, -Inf)),
+    x = guide_axis_truncated(
+    trunc_lower = c(Inf, 37),
+    trunc_upper = c(37.5, -Inf)))
+fig.corr.session.watt.max.percentage.6x6
+
+
+
+# HR
+
+# HR 4x5
+fig.corr.session.hr.4x5 <- session_fig_data %>% 
+  filter(session.type == "4x5") %>%
+  select(id, period, mean.session.hr) %>% 
+  pivot_wider(names_from = period,
+              values_from = mean.session.hr) %>% 
+  select(id, "1", "2") %>% 
+  ggplot(., aes(x=`1`, y=`2`)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed, color = "navy") +
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", colour = "black", linewidth=line.width) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(105, 161), breaks = seq(from = 110, to = 160, by = 10)) +
+  scale_x_continuous(limits = c(105, 161), breaks = seq(from = 110, to = 160, by = 10)) +
+  labs(x = expression("ET"[1] * " HR (bpm)"), 
+       y = expression("ET"[2] * " HR (bpm)")) +
+  theme(text=element_text(size=text.size)) +
+  guides(y = guide_axis_truncated(
+    trunc_lower = c(Inf, 105),
+    trunc_upper = c(107, -Inf)),
+    x = guide_axis_truncated(
+    trunc_lower = c(Inf, 105),
+    trunc_upper = c(107, -Inf)))
+fig.corr.session.hr.4x5
+
+
+# HR 4x8
+fig.corr.session.hr.4x8 <- session_fig_data %>% 
+  filter(session.type == "4x8") %>%
+  select(id, period, mean.session.hr) %>% 
+  pivot_wider(names_from = period,
+              values_from = mean.session.hr) %>% 
+  select(id, "1", "2") %>% 
+  ggplot(., aes(x=`1`, y=`2`)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed, color = "navy") +
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", colour = "black", linewidth=line.width) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(105, 170), breaks = seq(from = 110, to = 170, by = 10)) +
+  scale_x_continuous(limits = c(105, 170), breaks = seq(from = 110, to = 170, by = 10)) +
+  labs(x = expression("ET"[1] * " HR (bpm)"), 
+       y = expression("ET"[2] * " HR (bpm)")) +
+  theme(text=element_text(size=text.size)) +
+  guides(y = guide_axis_truncated(
+    trunc_lower = c(Inf, 105),
+    trunc_upper = c(107, -Inf)),
+    x = guide_axis_truncated(
+    trunc_lower = c(Inf, 105),
+    trunc_upper = c(107, -Inf)))
+fig.corr.session.hr.4x8
+
+
+# HR 6x6
+fig.corr.session.hr.6x6 <- session_fig_data %>% 
+  filter(session.type == "6x6") %>%
+  select(id, period, mean.session.hr) %>% 
+  pivot_wider(names_from = period,
+              values_from = mean.session.hr) %>% 
+  select(id, "1", "2") %>% 
+  ggplot(., aes(x=`1`, y=`2`)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed, color = "navy") +
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", colour = "black", linewidth=line.width) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(95, 155), breaks = seq(from = 100, to = 150, by = 10)) +
+  scale_x_continuous(limits = c(95, 155), breaks = seq(from = 100, to = 150, by = 10)) +
+  labs(x = expression("ET"[1] * " HR (bpm)"), 
+       y = expression("ET"[2] * " HR (bpm)")) +
+  theme(text=element_text(size=text.size)) +
+  guides(y = guide_axis_truncated(
+    trunc_lower = c(Inf, 95),
+    trunc_upper = c(97, -Inf)),
+    x = guide_axis_truncated(
+    trunc_lower = c(Inf, 95),
+    trunc_upper = c(97, -Inf)))
+fig.corr.session.hr.6x6
+
+
+# % of HRmax
+
+# % of HRmax 4x5
+fig.corr.session.p.hr.max.4x5 <- session_fig_data %>% 
+  filter(session.type == "4x5") %>%
+  select(id, period, mean.session.hr.max.percentage) %>% 
+  pivot_wider(names_from = period,
+              values_from = mean.session.hr.max.percentage) %>% 
+  select(id, "1", "2") %>% 
+  ggplot(., aes(x=`1`, y=`2`)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed, color = "navy") +
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", colour = "black", linewidth=line.width) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(72, 90), breaks = seq(from = 75, to = 90, by = 5)) +
+  scale_x_continuous(limits = c(72, 90), breaks = seq(from = 75, to = 90, by = 5)) +
+  labs(x = expression("ET"[1] * " % of HR"["max"]*"  (%)"), 
+       y = expression("ET"[2] * " % of HR"["max"]*"  (%)")) +
+  theme(text=element_text(size=text.size)) +
+  guides(y = guide_axis_truncated(
+    trunc_lower = c(Inf, 72.5),
+    trunc_upper = c(73, -Inf)),
+    x = guide_axis_truncated(
+    trunc_lower = c(Inf, 72.5),
+    trunc_upper = c(73, -Inf)))
+fig.corr.session.p.hr.max.4x5
+
+
+# % of HRmax 4x8
+fig.corr.session.p.hr.max.4x8 <- session_fig_data %>% 
+  filter(session.type == "4x8") %>%
+  select(id, period, mean.session.hr.max.percentage) %>% 
+  pivot_wider(names_from = period,
+              values_from = mean.session.hr.max.percentage) %>% 
+  select(id, "1", "2") %>% 
+  ggplot(., aes(x=`1`, y=`2`)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed, color = "navy") +
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", colour = "black", linewidth=line.width) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(72, 95), breaks = seq(from = 75, to = 95, by = 5)) +
+  scale_x_continuous(limits = c(72, 95), breaks = seq(from = 75, to = 95, by = 5)) +
+  labs(x = expression("ET"[1] * " % of HR"["max"]*"  (%)"), 
+       y = expression("ET"[2] * " % of HR"["max"]*"  (%)")) +
+  theme(text=element_text(size=text.size)) +
+  guides(y = guide_axis_truncated(
+    trunc_lower = c(Inf, 72.5),
+    trunc_upper = c(73, -Inf)),
+    x = guide_axis_truncated(
+    trunc_lower = c(Inf, 72.5),
+    trunc_upper = c(73, -Inf)))
+fig.corr.session.p.hr.max.4x8
+
+
+# % of HRmax 6x6
+fig.corr.session.p.hr.max.6x6 <- session_fig_data %>% 
+  filter(session.type == "6x6") %>%
+  select(id, period, mean.session.hr.max.percentage) %>% 
+  pivot_wider(names_from = period,
+              values_from = mean.session.hr.max.percentage) %>% 
+  select(id, "1", "2") %>% 
+  ggplot(., aes(x=`1`, y=`2`)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed, color = "navy") +
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", colour = "black", linewidth=line.width) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(62, 90), breaks = seq(from = 65, to = 90, by = 5)) +
+  scale_x_continuous(limits = c(62, 90), breaks = seq(from = 65, to = 90, by = 5)) +
+  labs(x = expression("ET"[1] * " % of HR"["max"]*"  (%)"), 
+       y = expression("ET"[2] * " % of HR"["max"]*"  (%)")) +
+  theme(text=element_text(size=text.size)) +
+  guides(y = guide_axis_truncated(
+    trunc_lower = c(Inf, 62.5),
+    trunc_upper = c(63, -Inf)),
+    x = guide_axis_truncated(
+    trunc_lower = c(Inf, 62.5),
+    trunc_upper = c(63, -Inf)))
+fig.corr.session.p.hr.max.6x6
+
+
+
+# Create a dummy plot to serve as empty space
+empty <- ggplot() + theme_void()
+
+
+# Combine figures
+fig.sessions <- plot_grid(fig.corr.session.watt.4x5, fig.corr.session.watt.4x8, fig.corr.session.watt.6x6,
+                          fig.corr.session.watt.max.percentage.4x5, fig.corr.session.watt.max.percentage.4x8, fig.corr.session.watt.max.percentage.6x6,
+                          fig.corr.session.hr.4x5, fig.corr.session.hr.4x8, fig.corr.session.hr.6x6,
+                          fig.corr.session.p.hr.max.4x5, fig.corr.session.p.hr.max.4x8, fig.corr.session.p.hr.max.6x6,
+                          fig.corr.session.rpe.4x5, fig.corr.session.rpe.4x8, fig.corr.session.rpe.6x6,
+                          ncol = 3, rel_widths = c(1, 1, 1), align = "vh") +
+
+  draw_plot_label(x = c(0.01, 0.34, 0.67, 
+                        0.01, 0.34, 0.67,
+                        0.01, 0.34, 0.67,
+                        0.01, 0.34, 0.67,
+                        0.01, 0.34, 0.67), 
+                  y = c(1, 1, 1,
+                        0.81, 0.81, 0.81,
+                        0.60, 0.60, 0.60,
+                        0.40, 0.40, 0.40,
+                        0.20, 0.20, 0.20), 
+                  label = c("A", "B", "C",
+                            "D", "E", "F", 
+                            "G", "H", "I",
+                            "J", "K", "L",
+                            "M", "N", "O"), 
+                  size = text.size) +
+
+ 
+  # PO 
+  # A
+  draw_plot_label(x = 0.09, 
+                y = c(0.99, 0.975), 
+                label = c("ICC = 0.96 [0.94, 0.98]", "r = 0.97 [0.95, 0.99]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0) +
+  
+  # B
+  draw_plot_label(x = 0.425, 
+                y = c(0.99, 0.975), 
+                label = c("ICC = 0.96 [0.94, 0.97]", "r = 0.97 [0.95, 0.98]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0) +
+  
+  
+  # C
+  draw_plot_label(x = 0.76, 
+                y = c(0.99, 0.975), 
+                label = c("ICC = 0.96 [0.93, 0.97]", "r = 0.97 [0.94, 0.98]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0) +
+  
+    
+  # % of POvo2max 
+  # D
+  draw_plot_label(x = 0.09, 
+                y = c(0.80, 0.785), 
+                label = c("ICC = 0.53 [0.22, 0.64]", "r = 0.55 [0.30, 0.73]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0) +
+  
+  # E
+  draw_plot_label(x = 0.425, 
+                y = c(0.80, 0.785), 
+                label = c("ICC = 0.44 [0.07, 0.56]", "r = 0.45 [0.17, 0.66]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0) +
+  
+  
+  # F
+  draw_plot_label(x = 0.76, 
+                y = c(0.80, 0.785), 
+                label = c("ICC = 0.43 [0.07, 0.56]", "r = 0.45 [0.17, 0.67]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0) +
+    
+    
+  # HR 
+  # G
+  draw_plot_label(x = 0.09, 
+                y = c(0.59, 0.575), 
+                label = c("ICC = 0.88 [0.82, 0.92]", "r = 0.90 [0.82, 0.95]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0) +
+
+  # H
+  draw_plot_label(x = 0.425, 
+                y = c(0.59, 0.575), 
+                label = c("ICC = 0.88 [0.82, 0.92]", "r = 0.90 [0.82, 0.95]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0) +
+
+  # I
+  draw_plot_label(x = 0.76, 
+                y = c(0.59, 0.575), 
+                label = c("ICC = 0.82 [0.70, 0.88]", "r = 0.88 [0.78, 0.93]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0) +   
+    
+    
+  # % of HRmax
+  # J
+  draw_plot_label(x = 0.09, 
+                y = c(0.39, 0.375), 
+                label = c("ICC = 0.44 [0.05, 0.56]", "r = 0.51 [0.24, 0.70]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0) +
+
+  # K
+  draw_plot_label(x = 0.425, 
+                y = c(0.39, 0.375), 
+                label = c("ICC = 0.63 [0.35, 0.73]", "r = 0.70 [0.50, 0.83]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0) +
+
+  # L
+  draw_plot_label(x = 0.76, 
+                y = c(0.39, 0.375), 
+                label = c("ICC = 0.63 [0.36, 0.73]", "r = 0.76 [0.59, 0.86]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0) +
+  
+  
+  # RPE 
+  # M
+  draw_plot_label(x = 0.09, 
+                y = c(0.19, 0.175), 
+                label = c("ICC = 0.73 [0.55, 0.81]","r = 0.74 [0.56, 0.85]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0) +
+
+  # N
+  draw_plot_label(x = 0.425, 
+                y = c(0.19, 0.175), 
+                label = c("ICC = 0.53 [0.22, 0.64]", "r = 0.58 [0.33, 0.75]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0) +
+
+  # O
+  draw_plot_label(x = 0.76, 
+                y = c(0.19, 0.175), 
+                label = c("ICC = 0.16 [0.00, 0.35]", "r = 0.42 [0.14, 0.65]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0) 
+
+fig.sessions
+
+
+figure.3 <- plot_grid(empty, fig.sessions,
+                          ncol = 1, rel_widths = c(1, 1), rel_heights = c(0.03, 1), align = "vh") +
+         draw_plot_label(x = c(0.20, 0.54, 0.86), 
+                  y = c(0.99, 0.99, 0.99), 
+                  label = c("4x5-minute", "4x8-minute", "6x6-minute"), 
+                  hjust = 0.5,
+                  size = title.text.size)
+figure.3
+
+
+saveRDS(figure.3, "./figures/rds/figure.3.RDS")
+
+ggsave("figures/figure.3.png", plot = figure.3, width = 16, height = 24, 
+       dpi = 800,
+       units = "cm", device= png())
+
+
+
+```
+

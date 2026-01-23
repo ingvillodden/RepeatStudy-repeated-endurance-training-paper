@@ -1,0 +1,553 @@
+---
+title: "data-preparation"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+# RepeatStudy-repeated-endurance-training-paper
+
+In this repository all data preparation and analysis is done for the following manuscript:
+
+Limited individual reproducibility of physiological adaptations to repeated endurance exercise training
+
+Authors: Ingvill Urianstad Odden, Håvard Hamarsland, Tomas Urianstad Odden, Daniel Hammarström, Anne Mette Rustaden, Lise Koll, Marita Hanestadhaugen, Steen Larsen, Stian Ellefsen, Joar Hansen, Håvard Nygaard, Carsten Lundby, Knut Sindre Mølmen
+
+
+## Data preparation
+
+In this file, all data is loaded from the RepeatData package (not publicly available) and prepared for analyses.
+
+### Loading needed packages for data preparation and analysis
+
+```{r, load packages}
+#| label: Packages 
+
+# Loading needed packages
+library(tidyverse)
+library(repeatData)
+library(readxl)
+
+```
+
+
+#### Periods:
+
+1 and 2 refers to training period 1 and 2 (ET-1 and ET-2 in manuscript)
+
+#### Timepoint:
+
+Testing timepoint, differs between training periods 1 and 2.
+
+##### Period 1
+
+Period 1 timepoint 1 = participants performed submaximal testing and incremental VO2max testing. This was the familarization testing (hence not used in analysis)
+
+Period 1 timepoint 2 = participants performed submaximal testing, incremental VO2max testing, and 15-min performance test. Submaximal test had different absolute power output than at timepoint 3 and 7 (hence not used in analysis). 15-min test was familarization (hence not used in analysis). Incremental VO2max testing was regarded participants´ PRE 1 test.
+
+Period 1 timepoint 3 = participants performed submaximal testing, incremental VO2max testing, and 15-min performance test. Submaximal test and 15-min test regarded as participants´ single PRE test. Incremental VO2max testing was regarded participants´ PRE 2 test.
+
+Period 1 timepoint 7 = participants performed submaximal testing, incremental VO2max testing, and 15-min performance test. All tests regarded participants´ single POST test.
+
+##### Period 2
+
+Period 2 timepoint 1 = participants performed submaximal testing, incremental VO2max testing, and 15-min performance test. Submaximal test had different absolute power output than at timepoint 2 and 3 (hence not used in analysis). Incremental VO2max testing and 15-min test were regarded participants´ PRE 1 test.
+
+Period 2 timepoint 2 = participants performed submaximal testing, incremental VO2max testing, and 15-min performance test. Submaximal test regarded as participants´ single PRE test. Incremental VO2max testing and 15-min test were regarded participants´ PRE 2 test.
+
+Period 2 timepoint 3 = participants performed submaximal testing, incremental VO2max testing, and 15-min performance test. All tests regarded participants´ single POST test.
+
+
+
+### Cycling data:
+
+Preparing data from the cycling data set, i.e. the exercise testing data.
+
+Duplicate pre-tests was averaged to a single PRE value. Duplicate tests were also used to calculate TE and %CV.
+
+```{r, cycling data}
+#| label: Cycling data
+
+
+# Submaximal cycling data
+
+filtered_submax_data <- cycling.data %>%
+  filter(period %in% c(1, 2)) %>% 
+  filter(group == "intervention") %>% 
+  filter(test == "sub_40") %>% # Only the second of the two submaximal bouts (25 and 40% of MMPOVO2max) is used in data analysis
+  
+  filter((period == 1 & timepoint %in% c(3, 7)) | 
+          # Timepoint 3 =  pre2, timepoint 7 = post 
+          # Only pre2 is used because only this pre-test had the same absolute power output at the submaximal bout as post-tests)
+         (period == 2 & timepoint %in% c(2, 3))) %>% 
+          # Timepoint 2 = pre2, timepoint 3 = post
+          # Only pre2 is used because only this pre-test had the same absolute power output at the submaximal bout as post-tests)
+ 
+   mutate(timepoint = case_when(
+    timepoint == 3 & period == 1 ~ "pre2",
+    timepoint == 7 & period == 1 ~ "post",
+    timepoint == 2 & period == 2 ~ "pre2",
+    timepoint == 3 & period == 2 ~ "post")) %>% 
+  
+  select(id, group, period, timepoint, watt.submax = watt, 
+         vo2.submax = vo2, rpe.submax = rpe, lac.submax = lac, hr.submax = hr, 
+         ve.submax = ve, rer.submax = rer, ge.submax = GE) %>% 
+  filter(!(id %in% c("49"))) 
+  # Removing participant (id49) because missing pre2 in period 1. Can hence not be used in analysis of submaximal tests
+  
+   
+
+# Maximal incremental cycling data
+
+filtered_max_data <- cycling.data %>%
+  filter(period %in% c(1, 2)) %>%
+  filter(group == "intervention") %>% 
+  filter(test == "max") %>% 
+  
+  filter((period == 1 & timepoint %in% c(2, 3, 7)) | 
+          # Timepoints 2 and 3 = pre1 and pre2, timepoint 7 = post
+         (period == 2 & timepoint %in% c(1, 2, 3))) %>% 
+          # Timepoints 1 and 2 = pre1 and pre2, timepoint 3 = post
+  
+  mutate(timepoint = case_when(
+    timepoint == 2 & period == 1 ~ "pre1",
+    timepoint == 3 & period == 1 ~ "pre2",
+    timepoint == 7 & period == 1 ~ "post",
+    timepoint == 1 & period == 2 ~ "pre1",
+    timepoint == 2 & period == 2 ~ "pre2",
+    timepoint == 3 & period == 2 ~ "post")) %>% 
+  
+  select(id, group, period, timepoint, sex, age, height, weight, 
+         watt.tresh = threshold, watt.max = watt, vo2.max = vo2, 
+         rpe.max = rpe, lac.max = lac, hr.max = hr, ve.max = ve, rer.max = rer) 
+  # Id49 have data from pre1, but not pre2. Pre 1 is hence used in analysis
+
+
+
+# Missing performance 15-min cycling  data for id49 at pre2 period 1, have to use familarization data instead
+
+id49per_data <- cycling.data %>%
+  filter(period %in% c(1, 2)) %>% 
+  filter(group == "intervention") %>% 
+  filter(test == "per") %>% 
+  filter(period == 1, timepoint %in% c(2), id %in% c(49)) %>%  
+  mutate(timepoint = "pre2") 
+  # Id49 did not perform the 15-min test at timepoint 3 (pre2) period 1.
+  # As well-performed test at timepoint 2 (familarization), we have chosen to use this test as timepoint 3 (pre2) in period 1 in data analysis
+
+
+
+# Performance 15-min cycling data
+
+filtered_per_data <- cycling.data %>% 
+  filter(period %in% c(1, 2)) %>% 
+  filter(group == "intervention") %>% 
+  filter(test == "per") %>% 
+      
+  filter((period == 1 & timepoint %in% c(3, 7)) | 
+          # Timepoint 3 = pre2, timepoint 7 = post
+         (period == 2 & timepoint %in% c(1, 2, 3))) %>% 
+          # Timepoints 1 and 2 = pre1 and pre2, timepoint 3 = post
+  
+  mutate(timepoint = case_when(
+    timepoint == 3 & period == 1 ~ "pre2", # Only one 15 min test at pre2 (not pre1) in period 1
+    timepoint == 7 & period == 1 ~ "post",
+    timepoint == 1 & period == 2 ~ "pre1",
+    timepoint == 2 & period == 2 ~ "pre2",
+    timepoint == 3 & period == 2 ~ "post")) %>% 
+  
+  full_join(id49per_data) %>% # Adding data for id49
+  
+  select(id, group, period, timepoint, watt.15tt = watt,
+         vo2.15tt = vo2, rpe.15tt = rpe, lac.15tt = lac, hr.15tt = hr, 
+         ve.15tt = ve, rer.15tt = rer, p.vo2.15tt = rel.vo2) 
+
+
+
+# Combining filtered cycling data
+
+all_timepoints_cycling_data <- filtered_max_data %>% 
+  full_join(filtered_submax_data, by = c("id", "period", "timepoint", "group")) %>%
+  full_join(filtered_per_data, by = c("id", "period", "timepoint", "group")) %>% print()
+  
+cycling_data <- all_timepoints_cycling_data %>% 
+  filter(timepoint %in% c("pre1", "pre2")) %>%
+  # Calculate the mean of pre1 and pre2 and rename to pre
+  
+  group_by(id, group, period) %>%
+  summarise(                
+    group = first(group),
+    period = first(period),
+    timepoint = "pre",
+    sex = first(sex),
+    across(where(is.numeric), mean, na.rm = TRUE),
+    .groups = "drop") %>% 
+  
+  # Combine with post
+  bind_rows(
+    all_timepoints_cycling_data %>%
+      filter(timepoint %in% c("post")) %>%
+      select(id, period, timepoint, sex, everything())) %>%
+  arrange(id, period, timepoint) %>%
+  select(-group)
+
+
+ # Save as RDS for later use 
+saveRDS(cycling_data, file = "data/derivedData/cycling_data")
+
+
+```
+
+#### All other data was collected at one pre-test and one post-test in period 1 and 2, respectively.
+
+### Body composition data:
+
+Preparing dual-energy X-ray absorptiometry (DXA) scan data.
+
+```{r, dxa}
+#| label: body composition
+
+body_composition_data <- dxa.data %>% 
+  filter(period %in% c(1, 2)) %>%
+  
+  mutate(id = as.factor(id)) %>% # Convert id to factor
+  mutate(period = as.character(period)) %>% # Convert period to character
+  
+  select(id, period, timepoint, lean.mass.whole.body) 
+    # Selecting which variables to use in the present analyses
+  
+
+# Save as RDS for later use 
+saveRDS(body_composition_data, file = "data/derivedData/body_composition_data")
+
+```
+
+### Immunohistochemistry:
+
+```{r, ihc}
+#| label: Immunohistochemistry
+
+
+
+immuno_data <- immuno.data %>% 
+  filter(period %in% c(1, 2)) %>%
+  # Participants missing data is already filtered out in the data. 
+  # Data from 13 participants missing (due to missing data at least one timepoint)
+  
+  select(id, period, timepoint, fiber.area, cd, cf) %>% 
+  # Selecting the variables of interest
+  
+  mutate(fiber.area = as.numeric(fiber.area), # Convert variables to numeric
+         cd = as.numeric(cd),
+         cf = as.numeric(cf)) %>%
+  mutate(id = as.factor(id)) %>% # Convert id to factor
+  mutate(period = as.character(period)) # Convert period to character
+
+# Save as RDS for later use 
+saveRDS(immuno_data, file = "data/derivedData/immuno_data")
+
+
+```
+
+### CS and HAD activities data:
+
+```{r, cs/had}
+#| label: CS/HAD 
+
+cs_had_data <- cs_had.data %>% 
+  filter(period %in% c(1, 2)) %>%
+  
+  filter(!id %in% c(33, 49)) %>% 
+  # Filtering out participants who did not have measurements in both period 1 and 2
+  
+  mutate(id = as.numeric(as.character(id)), # Convert id to numeric
+         id = as.factor(id))  # Convert id back to a factor
+  
+# Save as RDS for later use 
+saveRDS(cs_had_data, file = "data/derivedData/cs_had_data")
+
+```
+
+### Hematological data:
+
+```{r, blood}
+#| label: Blood
+
+# Creating hematological_data
+
+hematological_data <- hb.data %>% 
+  filter(period %in% c(1, 2)) %>% 
+  filter(group == "intervention") %>% 
+  select(-weight) %>% # Also added in this data set, but self reported, so will use the measured weight from exercise test in cycling data to claculate relative hemoglobin mass
+  select(-hbmass.kg) %>%
+  select(-group) 
+
+# Save as RDS for later use 
+saveRDS(hematological_data, file = "data/derivedData/hematological_data")
+
+
+```
+
+### Ferritin data
+
+```{r, Fe}
+#| label: Ferritin 
+
+ferritin_data <- iron_status.data %>% 
+  filter(period %in% c(1, 2)) %>%
+  
+  mutate(id = as.factor(id)) %>% # Convert id to factor
+  mutate(period = as.character(period)) %>% # Convert period to character
+  mutate(ferritin.level = as.numeric(iron_status)) %>% # Convert variable to numeric
+  select(-iron_status) %>% 
+  
+  filter(!(id %in% c("50", "53", "55"))) %>%
+  # Filter out id 50, 53 and 55 because not data at both pre period 1 and 2, and post period 1 (post period 2 was not measured)
+  
+  mutate(id = as.numeric(as.character(id)), # Convert id to numeric
+         id = as.factor(id))  # Convert id back to a factor
+
+
+# Save as RDS for later use 
+saveRDS(ferritin_data, file = "data/derivedData/ferritin_data")
+
+```
+
+### Combined test data
+
+Combining all test data. Also scaling values to total body mass (bm) and lean body mass (lbm)
+
+```{r, full data}
+#| label: Data combined 
+
+# Data in wide format
+test_data_wide <- cycling_data %>% 
+  full_join(body_composition_data, by = c("id", "period", "timepoint")) %>% 
+  full_join(immuno_data, by = c("id", "period", "timepoint")) %>%
+  full_join(cs_had_data, by = c("id", "period", "timepoint")) %>%
+  full_join(hematological_data, by = c("id", "period", "timepoint")) %>%
+  full_join(ferritin_data, by = c("id", "period", "timepoint")) %>%
+  
+  mutate(vo2.max.bm = vo2.max/weight,
+         vo2.max.lbm = vo2.max/lean.mass.whole.body,
+    
+         watt.max.bm = watt.max/weight,
+         watt.max.lbm = watt.max/lean.mass.whole.body,
+         
+         watt.15tt.bm = watt.15tt/weight,
+         watt.15tt.lbm = watt.15tt/lean.mass.whole.body,
+         
+         p.vo2.15tt = (vo2.15tt/vo2.max)*100,
+         vo2.15tt.bm = vo2.15tt/weight,
+         vo2.15tt.lbm = vo2.15tt/lean.mass.whole.body,
+        
+         watt.submax.bm = watt.submax/weight,
+         watt.submax.lbm = watt.submax/lean.mass.whole.body,
+         
+         vo2.submax.bm = vo2.submax/weight,
+         vo2.submax.lbm = vo2.submax/lean.mass.whole.body,
+         
+         hbmass.bm = hbmass/weight,
+         hbmass.lbm = hbmass/lean.mass.whole.body,
+         
+         bv.bm = bv/weight,
+         bv.lbm = bv/lean.mass.whole.body,
+         
+         rbcv.bm = rbcv/weight,
+         rbcv.lbm = rbcv/lean.mass.whole.body,
+         
+         pv.bm = pv/weight,
+         pv.lbm = pv/lean.mass.whole.body) %>%
+  
+  filter(!(id %in% c("4", "6", "11", "12", "13" ,"20", "21", "25", "35", "37", "48", "52", "53", "54", "56", "57"))) %>% 
+  # Filtering participants not completing training periods 1 and 2
+  
+  filter(!(id %in% c("101", "102", "103", "104", "105", "106", "107", "108", "109", "110", "111", "112", "114", "115", "116", "117"))) 
+  # Filtering participants in other group
+  
+ 
+
+# Save as RDS for later use 
+saveRDS(test_data_wide, file = "data/derivedData/test_data_wide")
+
+
+# Data in long format
+test_data_long <- test_data_wide %>% 
+  pivot_longer(
+    cols = -c(id, period, timepoint, sex), # Exclude columns from pivoting
+    names_to = "variable", 
+    values_to = "value") %>% 
+  group_by(id, variable) %>% 
+  pivot_wider(names_from = timepoint,
+              values_from = value) %>% 
+  mutate(change.pre.post = post - pre) %>% 
+  mutate(p.change.pre.post = ((post - pre)/pre) *100) %>% 
+  group_by(variable)
+
+
+# Save as RDS for later use 
+saveRDS(test_data_long, file = "data/derivedData/test_data_long")
+
+
+```
+
+#### Questionnaire data
+
+### Menopause data:
+
+At study onset, female participants were asked whether they had reached menopause and, if so, the time elapsed since their last menstrual period.
+
+```{r, menopause}
+#| label: Menopause
+
+menopause_data <- menopause.data %>% 
+  filter(!(id %in% c("4", "6", "11", "12", "13" ,"20", "21", "25", "35", "37", "48", "52", "53", "54", "56", "57"))) 
+  # Filtering participants not completing training periods 1 and 2
+  
+
+# Save as RDS for later use 
+saveRDS(menopause_data, file = "data/derivedData/menopause_data")
+
+
+```
+
+### Physical activity level:
+
+Participants were asked how many hh:mm per week they performed different types of activities. Here, the hh:mm is first converted to hours in decimals,
+
+```{r, pa}
+#| label: Physical activity
+
+
+# Load data
+activity_questionnaire_data <- fa_questionnaire.data %>% 
+  
+  filter(!(id %in% c("4", "6", "11", "12", "13" ,"20", "21", "25", "35", "37", "48", "52", "53", "54", "56", "57"))) %>% 
+  # Filtering participants not completing training periods 1 and 2
+  
+  filter(!(id %in% c("14", "27", "36", "40", "51"))) 
+  # Filtering participants not answering the questionnaire for both period 1, the wash-out, or period 2
+  
+
+# Save as RDS for later use 
+saveRDS(activity_questionnaire_data, file = "data/derivedData/activity_questionnaire_data")
+
+
+```
+
+# Session data:
+
+Data from all training sessions.
+
+Participants completed ~ 24 sessions in each training period, alternating between 4x5-min all-out, 4x8-min high-intensity, and 6x6-min moderate-intensity.
+
+```{r, sessions}
+#| label: Session data 
+
+# Finding pre-test values from period 1 and 2 to create fractions of maximal values
+
+max.data <- test_data_wide %>% 
+  select(id, period, timepoint, watt.max, hr.max) %>% 
+  filter(timepoint == "pre") 
+
+
+# Formatting the session data
+
+session_data <- session.data %>% 
+  filter(period %in% c(1, 2)) %>%
+  mutate(id = as.factor(id)) %>% # Converting id to factor
+  mutate(period = as.character(period)) %>% # Converting period to character
+  
+  filter(!(id == 15 & session.n == 22 & period == 1)) %>% # This was not a 4x5min session, plotting-mistake
+  filter(!(id == 44 & session.n == 12 & period == 2)) %>%  # This was not a 4x5min session, plotting-mistake
+  
+  rename(session.type = type, 
+         session.watt.4x5 = ftp,
+         session.hr = hr,
+         session.hr.max = hr.max, 
+         session.watt = watt,
+         session.rpe = rpe) %>%
+  
+  inner_join(max.data) %>%
+  
+  group_by(id, period) %>%
+  arrange(session.n, .by_group = TRUE) %>%
+  fill(session.watt.4x5, .direction = "down") %>% 
+  ungroup() %>% 
+  
+  mutate(session.hr.max.percentage = (session.hr/hr.max)*100,
+         session.watt.max.percentage = (session.watt/watt.max)*100,
+         session.watt.4x5.percentage = (session.watt/session.watt.4x5)*100) %>% 
+  
+  group_by(id, period) %>%
+
+  
+  
+  filter(!(id %in% c("4", "6", "11", "12", "13" ,"20", "21", "25", "35", "37", "48", "52", "53", "54", "56", "57"))) 
+
+  # Filtering participants not completing training periods 1 and 2
+  
+ 
+# Save as RDS for later use 
+saveRDS(session_data, file = "data/derivedData/session_data")
+
+
+```
+
+# VO2 session data
+
+Data from the two 4x8-min sessions in period1 and 2 with VO2 measurements during work intervals
+
+```{r, vo2 sessions}
+#| label: VO2 session data
+
+vo2_session_data <- vo2.session.data %>% 
+  filter(period %in% c(1, 2)) %>%
+  mutate(vo2.session.type = "4x8") %>% 
+  rename(vo2.session.lac = lac, 
+         vo2.session.rpe = rpe,
+         vo2.session.watt = watt,
+         vo2.session.vo2 = vo2,
+         vo2.session.ve = ve,
+         vo2.session.vco2 = vco2,
+         vo2.session.bf = bf,
+         vo2.session.hr = hr,
+         vo2.session.rer = rer,
+         vo2.session.vo2.percent = vo2.percent,
+         vo2.session.hr.percent = hr.percent,
+         vo2.session.90.vo2 = session.90.vo2,
+         vo2.session.90.hr = session.90.hr) %>% 
+  
+  filter(!(id %in% c("4", "6", "11", "12", "13" ,"20", "21", "25", "35", "37", "48", "52", "53", "54", "56", "57")))  
+  # Filtering participants not completing training periods 1 and 2
+  
+
+# Save as RDS for later use 
+saveRDS(vo2_session_data, file = "data/derivedData/vo2_session_data")
+
+
+```
+
+### CV calculation data from cycling tests
+
+```{r, cv}
+#| Label: CV
+
+# CV calculation data (maximal and performance data)
+
+cv_calculation_cycling_data <- filtered_max_data %>% 
+  full_join(filtered_per_data, by = c("id", "group", "period", "timepoint")) %>%
+  filter(timepoint %in% c("pre1", "pre2")) %>% 
+  select(-group) 
+
+cv_calculation_cycling_data_p1_p2 <- cv_calculation_cycling_data %>% 
+  filter(!(id %in% c("4", "6", "11", "12", "13" ,"20", "21", "25", "35", "37", "48", "52", "53", "54", "56", "57"))) 
+  # Filtering participants not completing training periods 1 and 2
+ 
+
+# Save as RDS for later use 
+saveRDS(cv_calculation_cycling_data_p1_p2, file = "data/derivedData/cv_calculation_cycling_data_p1_p2")
+
+
+```

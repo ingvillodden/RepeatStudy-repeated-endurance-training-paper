@@ -1,0 +1,171 @@
+---
+title: "individual-training-responses-figure5"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r}
+#| label: Packages 
+
+# Loading needed packages
+source("./R/libs.R")
+
+
+# Read the RDS files containing the data
+## Test data
+test_data_long <- readRDS(file = "data/derivedData/test_data_long")
+
+test_data_wide <- readRDS(file = "data/derivedData/test_data_wide")
+
+
+```
+
+
+##  Figure 5: Reproducibility of individual training responses
+
+Creating a figure with 3 panels showing associations between individual change scores in period 1 and 2.
+
+```{r}
+#| label: Figure 5
+
+# Saving sizes and widths of points and lines so easy to adjust
+point.size = 1
+line.width = 0.8
+line.width.dashed = 0.3
+axis.width = 0.5
+text.size = 9
+title.text.size = 9
+
+
+
+# PO 15-min
+fig.corr.watt.15tt <- test_data_long %>% 
+  filter(variable == "watt.15tt") %>% 
+  select(id, period, variable, change.pre.post) %>%
+  pivot_wider(names_from = period,
+              values_from = change.pre.post) %>% 
+  select(id, "1", "2") %>%
+  ggplot(., aes(x=`1`, y=`2`)) +
+  
+  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-4.06,ymax=4.06), fill="aliceblue") + # Adding colure to TE
+  geom_rect(aes(xmin=-4.06,xmax=4.06,ymin=-Inf,ymax=Inf), fill="aliceblue") + # Adding colure to TE
+  
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed,color = "navy") + 
+  # Add perfect correlation line
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", colour = "black", linewidth=line.width) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(-20, 80), breaks = seq(from = -20, to = 80, by = 20)) +
+  scale_x_continuous(limits = c(-20, 80), breaks = seq(from = -20, to = 80, by = 20)) +
+  labs(x = expression("ET"[1] ~ Delta ~ "MMPO"[15-min]*"  (W) "), 
+       y = expression("ET"[2] ~ Delta ~ "MMPO"[15-min]*"  (W) ")) +
+  theme(axis.line = element_line(linewidth = axis.width),  
+        text = element_text(size = text.size))  
+fig.corr.watt.15tt
+
+
+
+# PO VO2max
+fig.corr.watt.max <- test_data_long %>% 
+  filter(variable == "watt.max") %>% 
+  select(id, period, variable, change.pre.post) %>%
+  pivot_wider(names_from = period,
+              values_from = change.pre.post) %>% 
+  select(id, "1", "2") %>%
+  ggplot(., aes(x=`1`, y=`2`)) +
+    
+  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-6.96,ymax=6.96), fill="aliceblue") + # Adding colure to TE
+  geom_rect(aes(xmin=-6.96,xmax=6.96,ymin=-Inf,ymax=Inf), fill="aliceblue") + # Adding colure to TE
+  
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed, color = "navy") + 
+  # Add perfect correlation line
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", colour = "black", linewidth=line.width) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(-7, 80), breaks = seq(from = 0, to = 80, by = 25)) +
+  scale_x_continuous(limits = c(-7, 80), breaks = seq(from = 0, to = 80, by = 25)) +
+  labs(
+  x = expression("ET"[1] ~ Delta ~ "MMPO"[dot(V) * O[2 * max]] * " (W)"), 
+  y = expression("ET"[2] ~ Delta ~ "MMPO"[dot(V) * O[2 * max]] * " (W)")) +
+  theme(axis.line = element_line(linewidth = axis.width),
+        text = element_text(size = text.size))  
+fig.corr.watt.max
+
+
+# VO2max
+fig.corr.vo2.max <- test_data_long %>% 
+    filter(!(id %in% c("36", "58"))) %>% 
+  filter(variable == "vo2.max") %>% 
+  select(id, period, variable, change.pre.post) %>%
+  pivot_wider(names_from = period,
+              values_from = change.pre.post) %>% 
+  select(id, "1", "2") %>%
+  ggplot(., aes(x=`1`, y=`2`)) +
+  
+  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-Inf,ymax=61.1), fill="aliceblue") + # Adding colure to TE
+  geom_rect(aes(xmin=-Inf,xmax=61.1,ymin=-Inf,ymax=Inf), fill="aliceblue") + # Adding colure to TE
+  
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed,color = "navy") + # Add perfect correlation line
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", colour = "black", linewidth=line.width) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(-50, 850), breaks = seq(from = 0, to = 850, by = 200)) +
+  scale_x_continuous(limits = c(-50, 850), breaks = seq(from = 0, to = 850, by = 200)) +
+   labs(
+    x = expression("ET"[1] ~ Delta ~ dot(V) * O[2 * max] * "  (mL ∙ min"^-1 * ") "), 
+    y = expression("ET"[2] ~ Delta ~ dot(V) * O[2 * max] * "  (mL ∙ min"^-1 * ") ")) +
+  theme(axis.line = element_line(linewidth = axis.width),
+        text = element_text(size = text.size))  
+fig.corr.vo2.max
+
+
+
+# Figure 3 A-C: MPOvo2max, MMPO15min, and VO2max
+figure.5 <- plot_grid(fig.corr.watt.15tt, fig.corr.watt.max,fig.corr.vo2.max, 
+                             ncol = 3, rel_widths = c(1, 1, 1), rel_heights = c(1, 1, 1)) +
+  
+  # Name panels
+  draw_plot_label(x = c(0, 0.33, 0.66), 
+                  y = c(0.99, 0.99, 0.99), 
+                  label = c("A", "B", "C"), 
+                  size = text.size) +
+
+# Panel A
+  draw_plot_label(x = 0.09, 
+                y = c(0.97, 0.91),
+                label = c("ICC = 0.20 [0.00, 0.37]", "r = 0.23 [-0.08, 0.50]"),
+                size = 9,
+                fontface = "plain",
+                hjust = 0) +
+
+  # Panel B
+  draw_plot_label(x = 0.415,
+                y = c(0.97, 0.91), 
+                label = c("ICC = 0.32 [0.00, 0.45]", "r = 0.38 [0.08, 0.61]"), 
+                size = 9,
+                fontface = "plain",
+                hjust = 0) +
+
+  # Panel C
+  draw_plot_label(x = 0.76, 
+                y = c(0.97, 0.91), 
+                label = c("ICC = 0.19 [0.00, 0.37] ", "r = 0.19 [-0.13, 0.46]"),
+                size = 9,
+                fontface = "plain",
+                hjust = 0) 
+figure.5 
+  
+  
+
+# Determinants figure to pdf
+saveRDS(figure.5, "./figures/rds/figure.5.RDS")
+
+ggsave("figures/figure.5.png", plot = figure.5, width = 18, height = 6, 
+       dpi = 800,
+       units = "cm", device= png())
+
+
+```

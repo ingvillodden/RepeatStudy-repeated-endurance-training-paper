@@ -1,0 +1,243 @@
+---
+title: "mmpo4x5min-development-figure2"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+#| label: Packages 
+
+# Loading needed packages
+source("./R/libs.R")
+
+
+# Read the RDS files containing the data
+## Exercise training data
+session_data <- readRDS(file = "data/derivedData/session_data")
+
+```
+
+
+
+## Figure 2: Development of MMPO 4x5-min per two weeks of training
+
+Creating a figure showing the development of MMPO 4x5-min per two weeks of training in training periods 1 and 2 (5 sessions per period) with a point estimate indicating whether the mean response slopes of training periods 1 and 2 differ.
+
+
+
+```{r}
+#| label: Figure 2
+
+# Watt at the five 4x5min sessions in period 1 and 2
+session.watt.4x5_p1_p2 <- session_data %>%
+  filter(session.type == "4x5") %>%
+  mutate(session.n = min_rank(session.n)) %>%
+  mutate(session.n = as.character(session.n)) %>%
+  select(id, period, session.n, session.watt.4x5) %>% 
+  
+  # Some participants have missing values due values not noted in their training shemes (sessions were performed). To balance comparisons between periods, the value on the previous 4x5-min session is used.
+  # Note that only 10 out of 420 values were missing.
+
+  mutate(session.watt.4x5 = ifelse(period == 2 & id == 17 & session.n == 4, 269.5, session.watt.4x5)) %>%
+  mutate(session.watt.4x5 = ifelse(period == 1 & id == 27 & session.n == 4, 277.5, session.watt.4x5)) %>%
+  mutate(session.watt.4x5 = ifelse(period == 1 & id == 2 & session.n == 5, 107.5, session.watt.4x5)) %>%
+  mutate(session.watt.4x5 = ifelse(period == 1 & id == 30 & session.n == 4, 167.75, session.watt.4x5)) %>%
+  mutate(session.watt.4x5 = ifelse(period == 2 & id == 33 & session.n == 2, 91, session.watt.4x5)) %>%
+  mutate(session.watt.4x5 = ifelse(period == 1 & id == 36 & session.n == 4, 276, session.watt.4x5)) %>%
+  mutate(session.watt.4x5 = ifelse(period == 1 & id == 46 & session.n == 5, 180.75, session.watt.4x5)) %>%
+  mutate(session.watt.4x5 = ifelse(period == 2 & id == 49 & session.n == 5, 162.5, session.watt.4x5)) %>%
+  mutate(session.watt.4x5 = ifelse(period == 2 & id == 5 & session.n == 4, 160, session.watt.4x5)) %>%
+  mutate(session.watt.4x5 = ifelse(period == 1 & id == 9 & session.n == 5, 228.75, session.watt.4x5)) 
+
+
+
+# Creating a linear mixed model to estimate the change slope in period 1 and period 2
+
+# Fit your model
+model <- lmer(session.watt.4x5 ~ as.numeric(session.n)*period + 
+                (as.numeric(session.n)*period | id),
+              data = session.watt.4x5_p1_p2)
+
+
+#Parametric bootstrap of slopes
+boot_fun <- function(fit) {
+  fe <- fixef(fit)
+
+  slope_p1   <- fe["as.numeric(session.n)"]
+  slope_diff <- fe["as.numeric(session.n):period2"]
+  slope_p2   <- slope_p1 + slope_diff
+
+  c(
+    slope_p1   = slope_p1,
+    slope_diff = slope_diff,
+    slope_p2   = slope_p2
+  )
+}
+
+set.seed(123)
+
+boot_res <- bootMer(
+  model,
+  FUN = boot_fun,
+  nsim = 1000,
+  type = "parametric",
+  use.u = TRUE
+)
+
+
+
+# Extract estimates and bootstrap CIs
+fe <- fixef(model)
+
+slope_p1_est   <- fe["as.numeric(session.n)"]
+slope_diff_est <- fe["as.numeric(session.n):period2"]
+slope_p2_est   <- slope_p1_est + slope_diff_est
+
+boot_mat <- boot_res$t
+
+ci <- apply(
+  boot_mat,
+  2,
+  quantile,
+  probs = c(0.025, 0.975),
+  na.rm = TRUE
+)
+
+slopes <- data.frame(
+  term = c("slope_period1",
+           "slope_diff (p2 - p1)",
+           "slope_period2"),
+  estimate = c(slope_p1_est,
+               slope_diff_est,
+               slope_p2_est),
+  ci_low = ci[1, ],
+  ci_high = ci[2, ]
+)
+
+print(slopes)
+
+
+
+# Figure 2
+
+# Saving sizes and widths of points and lines so easy to adjust
+point.size = 1.5
+line.width = 0.6
+line.width.dashed = 0.3
+errorbar.width = 0.1
+errorbar.width.diff = 0.4
+text.size = 10
+
+
+
+# Plotting difference in slopes between period 1 and 2
+fig.diff.session.watt.4x5.p1.p2 <- slopes %>% 
+  filter(term == "slope_diff (p2 - p1)") %>%  # The difference in slopes between periods
+  ggplot(aes(y = estimate, x = reorder(term, estimate))) +
+  geom_errorbar(aes(ymin = ci_low, ymax = ci_high), linewidth = line.width, width = errorbar.width.diff, color = "#8b104e") +
+  geom_point(size = point.size, color = "#8b104e") +
+  geom_hline(yintercept = 0, linetype = 2, linewidth = line.width) +
+  scale_y_continuous(position = "right", limits = c(-2, 6), breaks = seq(from = -2, to = 6, by = 2)) +
+  labs(x = expression(""), 
+       y = expression(~ Delta ~ " ET"[2] * "  vs. " ~ Delta ~  " ET"[1] * "  (W ∙ two weeks"^-1 * ") ")) + 
+  theme_pubr() +
+  theme(
+    text = element_text(size = text.size),         # General text size
+    axis.title.y = element_text(face = "bold"),    # Make y-axis title bold
+    axis.text.x = element_blank(),                 # Remove x-axis text
+    axis.ticks.x = element_blank(),                # Remove x-axis ticks
+    axis.line.x = element_blank(),                 # Remove x-axis line
+    axis.title.x = element_blank(),                # Remove x-axis title
+    axis.line.x.bottom = element_blank(),          # Remove bottom x-axis line
+    legend.position = "none")
+fig.diff.session.watt.4x5.p1.p2
+
+
+# Create a dummy plot to serve as empty space
+empty <- ggplot() + theme_void()
+
+# Making the graph smaller
+fig.diff.session.watt.4x5.p1.p2 <- plot_grid(empty, fig.diff.session.watt.4x5.p1.p2, empty, 
+            nrow = 3, rel_heights = c(1, 4, 2), 
+            ncol = 1, align = "h")
+fig.diff.session.watt.4x5.p1.p2
+
+
+
+
+# Plotting slope development in period 1 and 2
+fig.session.watt.4x5.p1.p2 <- session.watt.4x5_p1_p2 %>%
+  ungroup() %>% 
+  mutate(
+    session.n = factor(session.n, levels = c("1", "2", "3", "4", "5")),
+
+    # Factor levels become plotmath strings
+    period = factor(period,
+                    levels = c("1", "2"),
+                    labels = c("ET[1]", "ET[2]"))
+  ) %>% 
+  ggplot(aes(x = session.n, y = session.watt.4x5)) +
+  
+  stat_summary(aes(group = period, colour = period),
+               fun = mean, geom = "line",
+               position = position_dodge(width = 0.2)) +
+  
+  coord_cartesian(ylim = c(130, 200)) +
+  geom_smooth(method="lm",
+              aes(group = period, colour = period),
+              linewidth = line.width.dashed, linetype = "dashed") +
+  geom_hline(yintercept = 145.1, linewidth = line.width.dashed,
+             linetype = "dashed", colour = "black") +
+  
+  theme_pubr() +
+  scale_colour_manual(values = c("#228B22", "#8b104e")) +
+  
+  scale_x_discrete(labels = c("0", "2", "4", "6", "8"),
+                   expand = expansion(add = c(0, 0))) +
+  
+  labs(x = "Weeks",
+       y = expression("MMPO"["4x5-min"]*"  (W)")) +
+  
+  facet_wrap(~period,
+             strip.position = "bottom",
+             labeller = label_parsed) +     # This parses ET[1] and ET[2]
+  
+  theme(legend.position = "none",
+        strip.placement = "outside",
+        strip.background = element_blank(),
+        strip.text.x = element_text(size = text.size),
+        text = element_text(size = text.size)) +
+  guides(y = guide_axis_truncated(
+     trunc_lower = c(Inf, 129),
+     trunc_upper = c(131, -Inf)))
+fig.session.watt.4x5.p1.p2
+
+
+
+# Adjust the plot margins of both plots
+fig.session.watt.4x5.p1.p2 <- fig.session.watt.4x5.p1.p2 + 
+  theme(plot.margin = margin(0.05, 0, 0, 0.05, "cm")) 
+
+fig.diff.session.watt.4x5.p1.p2 <- fig.diff.session.watt.4x5.p1.p2 + 
+  theme(plot.margin = margin(0.05, 0, 0, 0, "cm"))  
+
+
+# Combine the plots
+figure.2 <- 
+  plot_grid(fig.session.watt.4x5.p1.p2, fig.diff.session.watt.4x5.p1.p2, 
+            nrow = 1, rel_widths = c(8, 1)) 
+  
+figure.2
+
+
+saveRDS(figure.2, "./figures/rds/figure.2.RDS")
+
+ggsave("figures/figure.2.png", plot = figure.2, width = 20, height = 8, 
+       dpi = 800,
+       units = "cm", device= png())
+
+
+
+```

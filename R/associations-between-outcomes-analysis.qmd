@@ -1,0 +1,144 @@
+---
+title: "associations-between-outcomes-analysis"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+#| label: Packages 
+
+# Loading needed packages
+source("./R/libs.R")
+
+
+# Read the RDS files containing the data
+## Test data
+test_data_long <- readRDS(file = "data/derivedData/test_data_long")
+
+test_data_wide <- readRDS(file = "data/derivedData/test_data_wide")
+
+
+```
+
+
+
+# Explorative analysis
+
+To explore whether within-individual response variability in one outcome (e.g. Hbmass) was associated the within-individual response variability in another outcome (e.g. V̇O2max), each participant’s between-period difference in change scores (∆ ET2 - ∆ ET1) was calculated for selected outcomes, and linear regression models were fitted for each outcome pair of interest (R stats package) on the form:
+outcome A ~ outcome B
+The coefficient of determination (R2) was retrieved from each model and bootstrapped 95% confidence intervals for R² were obtained using nonparametric bootstrap resampling with 1000 resamples. Pearson´s correlation coefficients (r) with 95% CIs (R stats package) were also used to examine the associations.
+
+
+```{r}
+#| label: Associations within-individual variability across outcomes
+
+diff_selected_outcomes <- test_data_long %>% 
+  select(id, period, variable, p.change.pre.post) %>% 
+  filter(variable %in% c("cs_umol.g.min", "had_umol.g.min")) %>% 
+  pivot_wider(names_from = period, values_from = p.change.pre.post) %>% 
+  mutate(diff.p1.p2 = (`2` - `1`)) %>% 
+  select(id, variable, diff.p1.p2) %>% 
+  drop_na() 
+
+
+diff_outcomes <- test_data_long %>% 
+  select(id, period, variable, change.pre.post) %>% 
+  filter(variable %in% c("watt.15tt", "watt.max", "vo2.max", "p.vo2.15tt", "ge.submax", "hbmass", "bv", "cd", "cf")) %>% 
+  pivot_wider(names_from = period, values_from = change.pre.post) %>% 
+  mutate(diff.p1.p2 = (`2` - `1`)) %>%
+  select(id, variable, diff.p1.p2) %>%
+  full_join(diff_selected_outcomes, by = c("id", "variable", "diff.p1.p2"))
+
+
+# Define physiological and performance outcomes
+phys_outcomes  <- c("hbmass", "bv", "cd", "cf", "cs_umol.g.min", "had_umol.g.min")
+perf_outcomes  <- c("watt.15tt", "watt.max", "vo2.max")
+
+# Function to compute R² and Pearson r with 95% CI using cor.test
+bootstrap_r2_r <- function(data, outcome, predictor, nboot = 1000, seed = 123) {
+  
+  set.seed(seed)
+  
+  # Subset and reshape data
+  r_data <- data %>%
+    filter(variable %in% c(outcome, predictor)) %>%
+    pivot_wider(names_from = variable, values_from = diff.p1.p2) %>%
+    drop_na()
+  
+  # Skip if too few data points
+  if (nrow(r_data) < 5) {
+    return(tibble(
+      predictor   = predictor,
+      outcome     = outcome,
+      r_squared   = NA_real_,
+      r2_low      = NA_real_,
+      r2_high     = NA_real_,
+      pearsons_r  = NA_real_,
+      r_low       = NA_real_,
+      r_high      = NA_real_
+    ))
+  }
+  
+  # Linear regression R²
+  fit <- lm(r_data[[outcome]] ~ r_data[[predictor]])
+  r2_point <- summary(fit)$r.squared
+  
+  # Bootstrap R²
+  r2_boot <- replicate(nboot, {
+    idx <- sample(seq_len(nrow(r_data)), replace = TRUE)
+    fit_b <- lm(r_data[[outcome]][idx] ~ r_data[[predictor]][idx])
+    summary(fit_b)$r.squared
+  })
+  r2_ci <- quantile(r2_boot, probs = c(0.025, 0.975), na.rm = TRUE)
+  
+  # Pearson r and 95% CI using cor.test
+  cor_res <- cor.test(r_data[[outcome]], r_data[[predictor]], method = "pearson")
+  
+  tibble(
+    predictor   = predictor,
+    outcome     = outcome,
+    r_squared   = r2_point,
+    r2_low      = r2_ci[1],
+    r2_high     = r2_ci[2],
+    pearsons_r  = unname(cor_res$estimate),
+    r_low       = cor_res$conf.int[1],
+    r_high      = cor_res$conf.int[2]
+  )
+}
+
+# Compute all combinations of performance and physiological outcomes
+results <- purrr::cross_df(list(
+  outcome   = perf_outcomes,
+  predictor = phys_outcomes
+)) %>%
+  pmap_dfr(~ bootstrap_r2_r(
+    data      = diff_outcomes,
+    outcome   = ..1,
+    predictor = ..2,
+    nboot     = 1000
+  )) %>%
+  mutate(
+    r_squared   = round(r_squared, 2),
+    r2_low      = round(r2_low, 2),
+    r2_high     = round(r2_high, 2),
+    pearsons_r  = round(pearsons_r, 2),
+    r_low       = round(r_low, 2),
+    r_high      = round(r_high, 2)
+  )
+
+# Format for presentation
+results_summary <- results %>%
+  mutate(
+    `R2 [95% CI]` = sprintf("%.2f [%.2f, %.2f]", r_squared, r2_low, r2_high),
+    `r [95% CI]`  = sprintf("%.2f [%.2f, %.2f]", pearsons_r, r_low, r_high)
+  ) %>%
+  select(outcome, predictor, `R2 [95% CI]`, `r [95% CI]`)
+
+print(results_summary, width = Inf, n = Inf)
+
+
+
+```
+

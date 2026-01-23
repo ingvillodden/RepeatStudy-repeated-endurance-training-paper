@@ -1,0 +1,530 @@
+---
+title: "training-responses-analysis"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+#| label: Packages 
+
+# Loading needed packages
+source("./R/libs.R")
+
+
+# Read the RDS files containing the data
+## Test data
+test_data_long <- readRDS(file = "data/derivedData/test_data_long")
+
+test_data_wide <- readRDS(file = "data/derivedData/test_data_wide")
+
+
+```
+
+
+## Training responses data
+
+1.  Mean training responses in training periods 1 and 2, and difference in change
+
+2.  Reproducibility of individual training responses
+
+
+
+### 1.  Mean training responses in training periods 1 and 2, and difference in change
+
+Mean (SD) of pre, post, and change scores in training periods 1 and 2.
+
+Potential differences in group-level training responses were investigated by fitting linear mixed models with change in the outcome variable of interest as the dependent variable, training period as the explanatory variable, and with participant-level intercepts (lme4 package).
+
+```{r}
+#| label: Mean training responses
+
+## Mean (SD) of age, height, weight,and VO2max.kg at onset of period 1 to write in text in abstract and methods
+## Mean (SD) at pre and post in both training interventions, as well as change scores to add in table
+
+mean_values_timepoints_data <- test_data_long %>% 
+  group_by(period, variable) %>% 
+
+  filter(variable %in% c("age", "height", "weight", "lean.mass.whole.body", "vo2.max", "vo2.max.bm", "watt.max", "watt.15tt", "p.vo2.15tt", "ge.submax", "hbmass", "bv", "rbcv", "pv", "hct", "hb.c", "ferritin.level", "cs_umol.g.min", "had_umol.g.min", "fiber.area", "cd", "cf")) %>% 
+  summarise(across(c(pre, post, change.pre.post, p.change.pre.post),
+                   list(mean_sd = ~sprintf("%.1f (%.1f)", mean(.x, na.rm = TRUE), sd(.x, na.rm = TRUE))),
+                   .names = "{.col}")) %>% 
+  pivot_wider(names_from = period,
+              values_from = c(pre, post, change.pre.post, p.change.pre.post))
+
+flextable(mean_values_timepoints_data)
+
+
+
+## Difference in changes between period 1 and 2
+
+variables <- c("watt.max", "watt.15tt", "vo2.max", "p.vo2.15tt", "ge.submax", 
+               "hbmass", "bv", "rbcv", "pv", "hct", "hb.c",
+               "fiber.area", "cd", "cf",
+               "weight", "lean.mass.whole.body") 
+
+# Data frame to store results
+results <- data.frame(
+  variable = character(),
+  estimate = numeric(),
+  conf.low = numeric(),
+  conf.high = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Loop over each variable
+for (var in variables) {
+  cat("Processing variable:", var, "\n")
+  
+  # Fit model
+  model <- lmer(change.pre.post ~ period + (1|id), data = test_data_long %>% filter(variable == var))
+  print(model)
+  
+  # Calculate and print coefficients with confidence intervals
+  coefs <- broom.mixed::tidy(model, conf.int = TRUE)
+  print(coefs)
+  
+  # Extract only the second row (fixed effect for period)
+  coefs_period <- coefs %>% filter(term == "period2")
+  
+  # Append results to the data frame
+  results <- rbind(results, data.frame(
+    variable = var,
+    estimate = round(coefs_period$estimate, 2),
+    conf.low = round(coefs_period$conf.low, 2),
+    conf.high = round(coefs_period$conf.high, 2),
+    stringsAsFactors = FALSE
+  ))
+}
+
+# Print all results
+print(results)
+flextable(results)
+
+
+
+## Difference in %-changes between ET-1 and ET-2
+
+# List of variables to process
+variables <- c("cs_umol.g.min", "had_umol.g.min")
+
+# Data frame to store results
+results <- data.frame(
+  variable = character(),
+  estimate = numeric(),
+  conf.low = numeric(),
+  conf.high = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Loop over each variable
+for (var in variables) {
+  cat("Processing variable:", var, "\n")
+  
+  # Fit model
+  model <- lmer(p.change.pre.post ~ period + (1|id), data = test_data_long %>% filter(variable == var))
+  print(model)
+  
+  # Calculate and print coefficients with confidence intervals
+  coefs <- broom.mixed::tidy(model, conf.int = TRUE)
+  print(coefs)
+  
+  # Extract only the second row (fixed effect for period)
+  coefs_period <- coefs %>% filter(term == "period2")
+  
+  # Append results to the data frame
+  results <- rbind(results, data.frame(
+    variable = var,
+    estimate = round(coefs_period$estimate, 1),
+    conf.low = round(coefs_period$conf.low, 1),
+    conf.high = round(coefs_period$conf.high, 1),
+    stringsAsFactors = FALSE
+  ))
+}
+
+
+# Print all results
+print(results)
+flextable(results)
+
+
+```
+
+
+### 2.  Reproducibility of individual training responses
+
+```{r}
+#| label: Reproducibility of individual training responses
+
+## Absolute changes
+
+
+# List of variables you want to process
+outcomes <- c("watt.max", "watt.15tt", "vo2.max", "p.vo2.15tt", "ge.submax", 
+               "hbmass", "bv", "rbcv", "pv", "hct", "hb.c",
+               
+               "watt.max.bm", "watt.max.lbm", "watt.15tt.bm", "watt.15tt.lbm",
+               "vo2.max.bm", "vo2.max.lbm", 
+               "hbmass.bm", "hbmass.lbm", "bv.bm", "bv.lbm",
+               "rbcv.bm", "rbcv.lbm", "pv.bm", "pv.lbm",
+               
+               "fiber.area", "cd", "cf",
+              
+               "weight", "lean.mass.whole.body") 
+
+
+# Intraclass correlation
+
+# Function to estimate ICCs with bootstrap CIs
+
+analyze_trainability_icc_ci <- function(
+  data,
+  outcome,
+  nboot = 1000,
+  seed  = 123
+) {
+
+  message("Running model for: ", outcome)  # Progress message for tracking
+
+  # Subset data to the current outcome and ensure correct factor structure
+  df <- data %>%
+    filter(variable == outcome) %>%
+    mutate(
+      period = factor(period),  # Training period as categorical fixed effect
+      id     = factor(id)        # Participant ID as grouping factor
+    ) %>% 
+    filter(!is.na(change.pre.post))
+
+  # Skip analysis if too few observations are available
+  if (nrow(df) < 5) {
+    warning("Too few observations for ", outcome)
+    return(NULL)
+  }
+
+  # Fit linear mixed-effects model to change scores
+  # Fixed effect: training period (adjusts for systematic differences)
+  # Random intercept: participant ID (captures between-individual variability)
+  mod <- lmer(
+    change.pre.post ~ 1 + (1 | id),
+    data = df,
+    REML = TRUE  # REML provides less biased variance component estimates
+  )
+
+  # Function to extract ICC from a fitted mixed-effects model
+  extract_icc <- function(fit) {
+    vc <- as.data.frame(VarCorr(fit))         # Extract variance components
+    vb <- vc$vcov[vc$grp == "id"]              # Between-individual variance
+    vw <- vc$vcov[vc$grp == "Residual"]        # Within-individual variance
+    vb / (vb + vw)                             # ICC calculation
+  }
+
+  # Compute point estimate of the ICC
+  ICC_between <- extract_icc(mod)
+
+  
+  # Parametric bootstrap to obtain 95% CI for ICC
+  boot_res <- tryCatch(
+    bootMer(
+      mod,
+      FUN   = extract_icc,     # Statistic to bootstrap (ICC)
+      nsim  = nboot,           # Number of bootstrap replicates
+      use.u = TRUE,            # Preserve random-effects structure
+      type  = "parametric",    # Parametric bootstrap
+      seed  = seed
+    ),
+    error = function(e) NULL   # Gracefully handle bootstrap failures
+  )
+
+  # Extract percentile-based 95% confidence interval
+  ci <- if (!is.null(boot_res)) {
+    quantile(
+      boot_res$t[, 1],
+      probs = c(0.025, 0.975),
+      na.rm = TRUE
+    )
+  } else {
+    c(NA, NA)                  # Return NA if CI cannot be estimated
+  }
+
+  # Return tidy summary for the current outcome
+  tibble(
+    Variable         = outcome,
+    ICC_between      = ICC_between,
+    ICC_between_low  = ci[1],
+    ICC_between_high = ci[2]
+  )
+}
+
+
+# Run ICC analysis across all outcomes
+results_icc <- map_dfr(
+  outcomes,                     # Vector of outcome variable names
+  analyze_trainability_icc_ci,  # Analysis function
+  data  = test_data_long,       # Long-format dataset
+  nboot = 1000                  # Number of bootstrap replicates
+)
+
+
+# Format ICC results for presentation
+icc_summary <- results_icc %>%
+  mutate(
+    `ICC Between` = sprintf(
+      "%.2f [%.2f, %.2f]",      # Format ICC with 95% CI
+      ICC_between,
+      ICC_between_low,
+      ICC_between_high
+    )
+  ) %>%
+  select(Variable, `ICC Between`)  # Keep only relevant columns
+
+# Print final table
+print(icc_summary, width = Inf, n = Inf)
+
+
+
+
+
+# Pearsons r
+
+# Data frame to store results
+results <- data.frame(
+  variable = character(),
+  r_CI_lower = numeric(),
+  r_CI_upper = numeric(),
+  pearsons_r = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Function to process each variable
+process_variable <- function(data, var_name) {
+  repeated_data <- data %>%
+    filter(variable == var_name) %>%
+    select(id, period, variable, change.pre.post) %>%
+    filter(!is.na(change.pre.post)) %>% 
+    pivot_wider(names_from = period, values_from = change.pre.post) %>%
+    select(id, "1", "2") %>%
+    rename(period.1 = `1`, period.2 = `2`) %>%
+    subset(select = -id) %>%
+    subset(select = -variable)
+  
+  print(repeated_data)
+  
+
+  # Pearsons r
+  pearsons_r <- cor.test(repeated_data$period.1, repeated_data$period.2, method = "pearson")
+  print(pearsons_r)
+  
+  
+  # Extract r value and confidence intervals, and round to 2 decimals
+  r_value <- round(pearsons_r$estimate, 2)
+  r_ci_lower <- round(pearsons_r$conf.int[1], 2)
+  r_ci_upper <- round(pearsons_r$conf.int[2], 2)
+  
+  # Append results to the data frame
+  results <<- rbind(results, data.frame(
+    variable = var_name,
+    pearsons_r = r_value,
+    r_CI_lower = r_ci_lower,
+    r_CI_upper = r_ci_upper,
+    stringsAsFactors = FALSE
+  ))
+}
+
+# Applying the function to each variable
+for (var in outcomes) {
+  cat("Processing variable:", var, "\n")
+  process_variable(test_data_long, var)
+}
+
+# Print the results data frame
+print(results)
+
+
+
+
+
+## % changes of absolute values
+
+# List of variables you want to process
+outcomes <- c("watt.max", "watt.15tt", "vo2.max",
+               "hbmass", "bv", "rbcv", "pv",
+               
+           
+               "cs_umol.g.min", "had_umol.g.min",
+               "fiber.area", "cd", "cf",
+              
+               "weight", "lean.mass.whole.body") 
+
+
+# Intraclass correlation
+
+# Function to estimate ICCs with bootstrap CIs
+analyze_trainability_icc_ci <- function(
+  data,
+  outcome,
+  nboot = 1000,
+  seed  = 123
+) {
+
+  message("Running model for: ", outcome)  # Progress message for tracking
+
+  # Subset data to the current outcome and ensure correct factor structure
+  df <- data %>%
+    filter(variable == outcome) %>%
+    mutate(
+      period = factor(period),  # Training period as categorical fixed effect
+      id     = factor(id)        # Participant ID as grouping factor
+    ) %>% 
+    filter(!is.na(p.change.pre.post))
+
+  # Skip analysis if too few observations are available
+  if (nrow(df) < 5) {
+    warning("Too few observations for ", outcome)
+    return(NULL)
+  }
+
+  # Fit linear mixed-effects model to change scores
+  # Fixed effect: training period (adjusts for systematic differences)
+  # Random intercept: participant ID (captures between-individual variability)
+  mod <- lmer(
+    p.change.pre.post ~ 1 + (1 | id),
+    data = df,
+    REML = TRUE  # REML provides less biased variance component estimates
+  )
+
+  # Function to extract ICC from a fitted mixed-effects model
+  extract_icc <- function(fit) {
+    vc <- as.data.frame(VarCorr(fit))         # Extract variance components
+    vb <- vc$vcov[vc$grp == "id"]              # Between-individual variance
+    vw <- vc$vcov[vc$grp == "Residual"]        # Within-individual variance
+    vb / (vb + vw)                             # ICC calculation
+  }
+
+  # Compute point estimate of the ICC
+  ICC_between <- extract_icc(mod)
+
+  
+  # Parametric bootstrap to obtain 95% CI for ICC
+  boot_res <- tryCatch(
+    bootMer(
+      mod,
+      FUN   = extract_icc,     # Statistic to bootstrap (ICC)
+      nsim  = nboot,           # Number of bootstrap replicates
+      use.u = TRUE,            # Preserve random-effects structure
+      type  = "parametric",    # Parametric bootstrap
+      seed  = seed
+    ),
+    error = function(e) NULL   # Gracefully handle bootstrap failures
+  )
+
+  # Extract percentile-based 95% confidence interval
+  ci <- if (!is.null(boot_res)) {
+    quantile(
+      boot_res$t[, 1],
+      probs = c(0.025, 0.975),
+      na.rm = TRUE
+    )
+  } else {
+    c(NA, NA)                  # Return NA if CI cannot be estimated
+  }
+
+  # Return tidy summary for the current outcome
+  tibble(
+    Variable         = outcome,
+    ICC_between      = ICC_between,
+    ICC_between_low  = ci[1],
+    ICC_between_high = ci[2]
+  )
+}
+
+
+# Run ICC analysis across all outcomes
+results_icc <- map_dfr(
+  outcomes,                     # Vector of outcome variable names
+  analyze_trainability_icc_ci,  # Analysis function
+  data  = test_data_long,             # Long-format dataset
+  nboot = 1000                  # Number of bootstrap replicates
+)
+
+
+# Format ICC results for presentation
+icc_summary <- results_icc %>%
+  mutate(
+    `ICC Between` = sprintf(
+      "%.2f [%.2f, %.2f]",      # Format ICC with 95% CI
+      ICC_between,
+      ICC_between_low,
+      ICC_between_high
+    )
+  ) %>%
+  select(Variable, `ICC Between`)  # Keep only relevant columns
+
+# Print final table
+print(icc_summary, width = Inf, n = Inf)
+
+
+
+
+
+# Pearsons r
+
+# Data frame to store results
+results <- data.frame(
+  variable = character(),
+  r_CI_lower = numeric(),
+  r_CI_upper = numeric(),
+  pearsons_r = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Function to process each variable
+process_variable <- function(data, var_name) {
+  repeated_data <- data %>%
+    filter(variable == var_name) %>%
+    select(id, period, variable, p.change.pre.post) %>%
+    filter(!is.na(p.change.pre.post)) %>% 
+    pivot_wider(names_from = period, values_from = p.change.pre.post) %>%
+    select(id, "1", "2") %>%
+    rename(period.1 = `1`, period.2 = `2`) %>%
+    subset(select = -id) %>%
+    subset(select = -variable)
+  
+  print(repeated_data)
+  
+
+  # Pearsons r
+  pearsons_r <- cor.test(repeated_data$period.1, repeated_data$period.2, method = "pearson")
+  print(pearsons_r)
+  
+  
+  # Extract r value and confidence intervals, and round to 2 decimals
+  r_value <- round(pearsons_r$estimate, 2)
+  r_ci_lower <- round(pearsons_r$conf.int[1], 2)
+  r_ci_upper <- round(pearsons_r$conf.int[2], 2)
+  
+  # Append results to the data frame
+  results <<- rbind(results, data.frame(
+    variable = var_name,
+    pearsons_r = r_value,
+    r_CI_lower = r_ci_lower,
+    r_CI_upper = r_ci_upper,
+    stringsAsFactors = FALSE
+  ))
+}
+
+# Applying the function to each variable
+for (var in outcomes) {
+  cat("Processing variable:", var, "\n")
+  process_variable(test_data_long, var)
+}
+
+# Print the results data frame
+print(results)
+
+
+```
+
+
+
+
