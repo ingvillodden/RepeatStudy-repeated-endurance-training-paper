@@ -14,7 +14,6 @@ Limited individual reproducibility of physiological adaptations to repeated endu
 
 Authors: Ingvill Urianstad Odden, Håvard Hamarsland, Tomas Urianstad Odden, Daniel Hammarström, Anne Mette Rustaden, Lise Koll, Marita Hanestadhaugen, Steen Larsen, Stian Ellefsen, Joar Hansen, Håvard Nygaard, Carsten Lundby, Knut Sindre Mølmen
 
-
 ## Data preparation
 
 In this file, all data is loaded from the RepeatData package (not publicly available) and prepared for analyses.
@@ -30,7 +29,6 @@ library(repeatData)
 library(readxl)
 
 ```
-
 
 #### Periods:
 
@@ -57,8 +55,6 @@ Period 2 timepoint 1 = participants performed submaximal testing, incremental VO
 Period 2 timepoint 2 = participants performed submaximal testing, incremental VO2max testing, and 15-min performance test. Submaximal test regarded as participants´ single PRE test. Incremental VO2max testing and 15-min test were regarded participants´ PRE 2 test.
 
 Period 2 timepoint 3 = participants performed submaximal testing, incremental VO2max testing, and 15-min performance test. All tests regarded participants´ single POST test.
-
-
 
 ### Cycling data:
 
@@ -93,7 +89,7 @@ filtered_submax_data <- cycling.data %>%
   select(id, group, period, timepoint, watt.submax = watt, 
          vo2.submax = vo2, rpe.submax = rpe, lac.submax = lac, hr.submax = hr, 
          ve.submax = ve, rer.submax = rer, ge.submax = GE) %>% 
-  filter(!(id %in% c("49"))) 
+  filter(!(id %in% c("49")))
   # Removing participant (id49) because missing pre2 in period 1. Can hence not be used in analysis of submaximal tests
   
    
@@ -194,7 +190,7 @@ cycling_data <- all_timepoints_cycling_data %>%
 
 
  # Save as RDS for later use 
-saveRDS(cycling_data, file = "data/derivedData/cycling_data")
+#saveRDS(cycling_data, file = "data/derivedData/cycling_data")
 
 
 ```
@@ -219,7 +215,7 @@ body_composition_data <- dxa.data %>%
   
 
 # Save as RDS for later use 
-saveRDS(body_composition_data, file = "data/derivedData/body_composition_data")
+#saveRDS(body_composition_data, file = "data/derivedData/body_composition_data")
 
 ```
 
@@ -245,7 +241,7 @@ immuno_data <- immuno.data %>%
   mutate(period = as.character(period)) # Convert period to character
 
 # Save as RDS for later use 
-saveRDS(immuno_data, file = "data/derivedData/immuno_data")
+#saveRDS(immuno_data, file = "data/derivedData/immuno_data")
 
 
 ```
@@ -265,7 +261,7 @@ cs_had_data <- cs_had.data %>%
          id = as.factor(id))  # Convert id back to a factor
   
 # Save as RDS for later use 
-saveRDS(cs_had_data, file = "data/derivedData/cs_had_data")
+#saveRDS(cs_had_data, file = "data/derivedData/cs_had_data")
 
 ```
 
@@ -284,7 +280,7 @@ hematological_data <- hb.data %>%
   select(-group) 
 
 # Save as RDS for later use 
-saveRDS(hematological_data, file = "data/derivedData/hematological_data")
+#saveRDS(hematological_data, file = "data/derivedData/hematological_data")
 
 
 ```
@@ -310,7 +306,7 @@ ferritin_data <- iron_status.data %>%
 
 
 # Save as RDS for later use 
-saveRDS(ferritin_data, file = "data/derivedData/ferritin_data")
+#saveRDS(ferritin_data, file = "data/derivedData/ferritin_data")
 
 ```
 
@@ -369,7 +365,7 @@ test_data_wide <- cycling_data %>%
  
 
 # Save as RDS for later use 
-saveRDS(test_data_wide, file = "data/derivedData/test_data_wide")
+#saveRDS(test_data_wide, file = "data/derivedData/test_data_wide")
 
 
 # Data in long format
@@ -387,7 +383,7 @@ test_data_long <- test_data_wide %>%
 
 
 # Save as RDS for later use 
-saveRDS(test_data_long, file = "data/derivedData/test_data_long")
+#saveRDS(test_data_long, file = "data/derivedData/test_data_long")
 
 
 ```
@@ -407,7 +403,7 @@ menopause_data <- menopause.data %>%
   
 
 # Save as RDS for later use 
-saveRDS(menopause_data, file = "data/derivedData/menopause_data")
+#saveRDS(menopause_data, file = "data/derivedData/menopause_data")
 
 
 ```
@@ -431,8 +427,16 @@ activity_questionnaire_data <- fa_questionnaire.data %>%
   
 
 # Save as RDS for later use 
-saveRDS(activity_questionnaire_data, file = "data/derivedData/activity_questionnaire_data")
+#saveRDS(activity_questionnaire_data, file = "data/derivedData/activity_questionnaire_data")
 
+
+activity_before_intervention_questionnaire_data <- fa_questionnaire.data %>% 
+  
+  filter(!(id %in% c("4", "6", "11", "12", "13" ,"20", "21", "25", "35", "37", "48", "52", "53", "54", "56", "57"))) %>% 
+  filter(timepoint == "pre_intervention")
+
+# Save as RDS for later use 
+#saveRDS(activity_before_intervention_questionnaire_data, file = "data/derivedData/activity_before_intervention_questionnaire_data")
 
 ```
 
@@ -440,7 +444,7 @@ saveRDS(activity_questionnaire_data, file = "data/derivedData/activity_questionn
 
 Data from all training sessions.
 
-Participants completed ~ 24 sessions in each training period, alternating between 4x5-min all-out, 4x8-min high-intensity, and 6x6-min moderate-intensity.
+Participants completed \~ 24 sessions in each training period, alternating between 4x5-min all-out, 4x8-min high-intensity, and 6x6-min moderate-intensity.
 
 ```{r, sessions}
 #| label: Session data 
@@ -490,7 +494,7 @@ session_data <- session.data %>%
   
  
 # Save as RDS for later use 
-saveRDS(session_data, file = "data/derivedData/session_data")
+#saveRDS(session_data, file = "data/derivedData/session_data")
 
 
 ```
@@ -524,7 +528,7 @@ vo2_session_data <- vo2.session.data %>%
   
 
 # Save as RDS for later use 
-saveRDS(vo2_session_data, file = "data/derivedData/vo2_session_data")
+#saveRDS(vo2_session_data, file = "data/derivedData/vo2_session_data")
 
 
 ```
@@ -547,7 +551,7 @@ cv_calculation_cycling_data_p1_p2 <- cv_calculation_cycling_data %>%
  
 
 # Save as RDS for later use 
-saveRDS(cv_calculation_cycling_data_p1_p2, file = "data/derivedData/cv_calculation_cycling_data_p1_p2")
+#saveRDS(cv_calculation_cycling_data_p1_p2, file = "data/derivedData/cv_calculation_cycling_data_p1_p2")
 
 
 ```

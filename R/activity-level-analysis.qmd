@@ -6,8 +6,6 @@ editor_options:
   chunk_output_type: console
 ---
 
-
-
 ```{r}
 #| label: Packages 
 
@@ -20,13 +18,37 @@ activity_questionnaire_data <- readRDS(file = "data/derivedData/activity_questio
 
 ```
 
-
 ### Mean and individual reproducibility of recreational activity level
 
 Kcal/week used on recreational activities
 
 ```{r}
 #| label: Mean and individual reproducibility of recreational activity level
+
+## Activity 8 weeks before intervention onset
+sex_data <- test_data_wide %>% 
+  filter(period == "1") %>% 
+  filter(timepoint == "pre") %>% 
+  select(id, sex)
+
+# Mean (sd) per sex and all participant
+activity_before_p1_sex <- activity_before_intervention_questionnaire_data %>% 
+  select(id, timepoint, recreational.activities) %>% 
+  inner_join(sex_data) %>%
+  group_by(sex) %>% 
+  summarise(across(recreational.activities,
+                   list(mean_sd = ~sprintf("%.0f (%.0f)", mean(.x, na.rm = TRUE), sd(.x, na.rm = TRUE))),
+                   .names = "{.col}")) %>% print()
+
+activity_before_p1_sex <- activity_before_intervention_questionnaire_data %>% 
+  select(id, timepoint, recreational.activities) %>% 
+  group_by() %>% 
+  summarise(across(recreational.activities,
+                   list(mean_sd = ~sprintf("%.0f (%.0f)", mean(.x, na.rm = TRUE), sd(.x, na.rm = TRUE))),
+                   .names = "{.col}")) %>% print()
+
+
+## Activity during training intervention
 
 # Selecting variables of interest
 activity.p1.washout.p2 <- activity_questionnaire_data %>% 
@@ -197,6 +219,3 @@ pearsons.r <- r_data %>%
 
 
 ```
-
-
-

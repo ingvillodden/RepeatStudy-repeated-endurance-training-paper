@@ -6,7 +6,6 @@ editor_options:
   chunk_output_type: console
 ---
 
-
 ```{r}
 #| label: Packages 
 
@@ -23,8 +22,7 @@ test_data_wide <- readRDS(file = "data/derivedData/test_data_wide")
 
 ```
 
-
-##  Figure 5: Reproducibility of individual training responses
+## Figure 5: Reproducibility of individual training responses
 
 Creating a figure with 3 panels showing associations between individual change scores in period 1 and 2.
 
@@ -50,8 +48,8 @@ fig.corr.watt.15tt <- test_data_long %>%
   select(id, "1", "2") %>%
   ggplot(., aes(x=`1`, y=`2`)) +
   
-  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-4.06,ymax=4.06), fill="aliceblue") + # Adding colure to TE
-  geom_rect(aes(xmin=-4.06,xmax=4.06,ymin=-Inf,ymax=Inf), fill="aliceblue") + # Adding colure to TE
+  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-8.12,ymax=8.12), fill="aliceblue") + # Adding colure to 2xTE
+  geom_rect(aes(xmin=-8.12,xmax=8.12,ymin=-Inf,ymax=Inf), fill="aliceblue") + # Adding colure to 2xTE
   
   geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed,color = "navy") + 
   # Add perfect correlation line
@@ -77,8 +75,8 @@ fig.corr.watt.max <- test_data_long %>%
   select(id, "1", "2") %>%
   ggplot(., aes(x=`1`, y=`2`)) +
     
-  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-6.96,ymax=6.96), fill="aliceblue") + # Adding colure to TE
-  geom_rect(aes(xmin=-6.96,xmax=6.96,ymin=-Inf,ymax=Inf), fill="aliceblue") + # Adding colure to TE
+  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-Inf,ymax=13.92), fill="aliceblue") + # Adding colure to 2xTE
+  geom_rect(aes(xmin=-Inf,xmax=13.92,ymin=-Inf,ymax=Inf), fill="aliceblue") + # Adding colure to 2xTE
   
   geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed, color = "navy") + 
   # Add perfect correlation line
@@ -97,7 +95,6 @@ fig.corr.watt.max
 
 # VO2max
 fig.corr.vo2.max <- test_data_long %>% 
-    filter(!(id %in% c("36", "58"))) %>% 
   filter(variable == "vo2.max") %>% 
   select(id, period, variable, change.pre.post) %>%
   pivot_wider(names_from = period,
@@ -105,8 +102,8 @@ fig.corr.vo2.max <- test_data_long %>%
   select(id, "1", "2") %>%
   ggplot(., aes(x=`1`, y=`2`)) +
   
-  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-Inf,ymax=61.1), fill="aliceblue") + # Adding colure to TE
-  geom_rect(aes(xmin=-Inf,xmax=61.1,ymin=-Inf,ymax=Inf), fill="aliceblue") + # Adding colure to TE
+  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-Inf,ymax=122.2), fill="aliceblue") + # Adding colure to 2xTE
+  geom_rect(aes(xmin=-Inf,xmax=122.2,ymin=-Inf,ymax=Inf), fill="aliceblue") + # Adding colure to 2xTE
   
   geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed,color = "navy") + # Add perfect correlation line
   geom_point(size=point.size) +

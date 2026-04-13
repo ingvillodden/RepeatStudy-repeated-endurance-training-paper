@@ -6,7 +6,6 @@ editor_options:
   chunk_output_type: console
 ---
 
-
 ```{r}
 #| label: Packages 
 
@@ -20,8 +19,6 @@ session_data <- readRDS(file = "data/derivedData/session_data")
 
 
 ```
-
-
 
 ### Figure 3: Individual reproducibility of training characteristics
 
@@ -639,4 +636,3 @@ ggsave("figures/figure.3.png", plot = figure.3, width = 16, height = 24,
 
 
 ```
-

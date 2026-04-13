@@ -1,0 +1,813 @@
+---
+title: "sex-individual-training-responses-figure6"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+
+### Figure 6: Reproducibility of individual training responses females and males
+
+Creating a figure with 3 x 4 panels showing associations between individual change scores in period 1 and 2 per sex.
+
+```{r}
+#| label: Settings
+
+# Saving sizes and widths of points and lines so easy to adjust
+point.size = 0.85
+line.width = 0.55
+line.width.dashed = 0.3
+text.size = 8.5
+title.text.size = 8
+reproducibility.text.size = 8.5
+interaction.text.size = 10
+alpha.ci = 0.15
+
+colour.f = "#B22222"
+colour.m = "#005A9C"
+
+```
+
+
+```{r}
+#| label: Figure 6abc
+
+
+# PO 15-min
+panel.a <- test_data_long %>% 
+  filter(variable == "watt.15tt") %>% 
+  select(id, period, sex, variable, change.pre.post) %>% 
+  pivot_wider(names_from = period,
+              values_from = change.pre.post) %>% 
+  select(id, sex, "1", "2") %>%
+  ggplot(., aes(x=`1`, y=`2`, colour = sex, fill = sex)) +
+  scale_colour_manual(values = c("m" = colour.m, "f" = colour.f)) +
+  scale_fill_manual(values = c("m" = colour.m, "f" = colour.f)) +
+
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed,color = "navy") + 
+  # Add perfect correlation line
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", linewidth=line.width, alpha = alpha.ci) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(-20, 80), breaks = seq(from = -20, to = 80, by = 20)) +
+  scale_x_continuous(limits = c(-20, 80), breaks = seq(from = -20, to = 80, by = 20)) +
+  labs(x = expression("ET"[1] ~ Delta ~ "MMPO"[15-min]*"  (W) "), 
+       y = expression("ET"[2] ~ Delta ~ "MMPO"[15-min]*"  (W) ")) +
+  theme(axis.line = element_line(linewidth = axis.width),  
+        text = element_text(size = text.size),
+        legend.position = "none")  
+
+
+# PO VO2max
+panel.b <- test_data_long %>% 
+  filter(variable == "watt.max") %>% 
+  select(id, sex, period, variable, change.pre.post) %>%
+  pivot_wider(names_from = period,
+              values_from = change.pre.post) %>% 
+  select(id, sex, "1", "2") %>%
+  ggplot(., aes(x=`1`, y=`2`, colour = sex, fill = sex)) +
+  scale_colour_manual(values = c("m" = colour.m, "f" = colour.f)) +
+  scale_fill_manual(values = c("m" = colour.m, "f" = colour.f)) +
+  
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed, color = "navy") + 
+  # Add perfect correlation line
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", linewidth=line.width, alpha = alpha.ci) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(-7, 80), breaks = seq(from = 0, to = 80, by = 25)) +
+  scale_x_continuous(limits = c(-7, 80), breaks = seq(from = 0, to = 80, by = 25)) +
+  labs(
+  x = expression("ET"[1] ~ Delta ~ "MMPO"[dot(V) * O[2 * max]] * " (W)"), 
+  y = expression("ET"[2] ~ Delta ~ "MMPO"[dot(V) * O[2 * max]] * " (W)")) +
+  theme(axis.line = element_line(linewidth = axis.width),
+        text = element_text(size = text.size),
+        legend.position = "none")  
+
+
+# VO2max
+panel.c <- test_data_long %>% 
+  filter(variable == "vo2.max") %>% 
+  select(id, sex, period, variable, change.pre.post) %>%
+  pivot_wider(names_from = period,
+              values_from = change.pre.post) %>% 
+  select(id, sex, "1", "2") %>%
+  ggplot(., aes(x=`1`, y=`2`, colour = sex, fill = sex)) +
+  scale_colour_manual(values = c("m" = colour.m, "f" = colour.f)) +
+  scale_fill_manual(values = c("m" = colour.m, "f" = colour.f)) +
+
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed,color = "navy") + # Add perfect correlation line
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", linewidth=line.width, alpha = alpha.ci) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(-50, 850), breaks = seq(from = 0, to = 850, by = 200)) +
+  scale_x_continuous(limits = c(-50, 850), breaks = seq(from = 0, to = 850, by = 200)) +
+   labs(
+    x = expression("ET"[1] ~ Delta ~ dot(V) * O[2 * max] * "  (mL ∙ min"^-1 * ") "), 
+    y = expression("ET"[2] ~ Delta ~ dot(V) * O[2 * max] * "  (mL ∙ min"^-1 * ") ")) +
+  theme(axis.line = element_line(linewidth = axis.width),
+        text = element_text(size = text.size),
+        legend.position = "none")  
+
+
+# Figure 3 A-C: MPOvo2max, MMPO15min, and VO2max
+panels.a.b.c <- plot_grid(panel.a, panel.b, panel.c, 
+                             ncol = 3, rel_widths = c(1, 1, 1), rel_heights = c(1, 1, 1)) +
+  
+  # Name panels
+  draw_plot_label(x = c(0, 0.33, 0.66), 
+                  y = c(0.99, 0.99, 0.99), 
+                  label = c("A", "B", "C"), 
+                  size = text.size) +
+
+  # Panel A
+  # Males
+  draw_plot_label(x = 0.09, 
+                y = c(0.97, 0.91),
+                label = c("ICC = 0.16 [0.00, 0.47]", "r = 0.27 [-0.18, 0.63]"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0,
+                color = colour.m) +
+  # Females
+  draw_plot_label(x = 0.15, 
+                y = c(0.34, 0.28),
+                label = c("ICC = 0.34 [0.00, 0.56]", "r = 0.33 [-0.12, 0.67]"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0,
+                color = colour.f) +
+  # Interaction
+  draw_plot_label(x = 0.28, 
+                y = c(0.62),
+                label = c("♀× ♂"),
+                size = interaction.text.size,
+                fontface = "plain",
+                hjust = 0.5) +
+  draw_plot_label(x = 0.28, 
+                y = c(0.56),
+                label = c("p = 0.843"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0.5) +
+
+  # Panel B
+  # Males
+  draw_plot_label(x = 0.415,
+                y = c(0.97, 0.91), 
+                label = c("ICC = 0.14 [0.00, 0.47]", "r = 0.24 [-0.22, 0.61]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0,
+                color = colour.m) +
+  # Females
+  draw_plot_label(x = 0.48,
+                y = c(0.34, 0.28), 
+                label = c("ICC = 0.44 [0.00, 0.64]", "r = 0.45 [0.02, 0.74]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0,
+                color = colour.f) +
+  # Interaction
+  draw_plot_label(x = 0.62, 
+                y = c(0.62),
+                label = c("♀× ♂"),
+                size = interaction.text.size,
+                fontface = "plain",
+                hjust = 0.5) +
+  draw_plot_label(x = 0.62, 
+                y = c(0.56),
+                label = c("p = 0.617"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0.5) +
+
+  # Panel C
+  # Males
+  draw_plot_label(x = 0.76, 
+                y = c(0.97, 0.91), 
+                label = c("ICC = 0.00 [0.00, 0.42] ", "r = -0.01 [-0.44, 0.42]"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0,
+                color = colour.m) +
+  # Females
+  draw_plot_label(x = 0.82,
+                y = c(0.34, 0.28), 
+                label = c("ICC = 0.17 [0.00, 0.46]", "r = 0.15 [-0.30, 0.55]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0,
+                color = colour.f) +
+  # Interaction
+  draw_plot_label(x = 0.95, 
+                y = c(0.62),
+                label = c("♀× ♂"),
+                size = interaction.text.size,
+                fontface = "plain",
+                hjust = 0.5) +
+  draw_plot_label(x = 0.95, 
+                y = c(0.56),
+                label = c("p = 0.670"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0.5) 
+
+
+```
+
+
+```{r}
+#| label: Figure 6def
+
+
+# PO 15-min
+panel.d <- test_data_long %>% 
+  filter(variable == "watt.15tt") %>% 
+  select(id, period, sex, variable, p.change.pre.post) %>% 
+  pivot_wider(names_from = period,
+              values_from = p.change.pre.post) %>% 
+  select(id, sex, "1", "2") %>%
+  ggplot(., aes(x=`1`, y=`2`, colour = sex, fill = sex)) +
+  scale_colour_manual(values = c("m" = colour.m, "f" = colour.f)) +
+  scale_fill_manual(values = c("m" = colour.m, "f" = colour.f)) +
+
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed,color = "navy") + 
+  # Add perfect correlation line
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", linewidth=line.width, alpha = alpha.ci) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(-10, 50), breaks = seq(from = -10, to = 50, by = 10)) +
+  scale_x_continuous(limits = c(-10, 50), breaks = seq(from = -10, to = 50, by = 10)) +
+  labs(x = expression("ET"[1] ~ Delta ~ "MMPO"[15-min]*"  (%) "), 
+       y = expression("ET"[2] ~ Delta ~ "MMPO"[15-min]*"  (%) ")) +
+  theme(axis.line = element_line(linewidth = axis.width),  
+        text = element_text(size = text.size),
+        legend.position = "none")  
+
+
+# PO VO2max
+panel.e <- test_data_long %>% 
+  filter(variable == "watt.max") %>% 
+  select(id, sex, period, variable, p.change.pre.post) %>%
+  pivot_wider(names_from = period,
+              values_from = p.change.pre.post) %>% 
+  select(id, sex, "1", "2") %>%
+  ggplot(., aes(x=`1`, y=`2`, colour = sex, fill = sex)) +
+  scale_colour_manual(values = c("m" = colour.m, "f" = colour.f)) +
+  scale_fill_manual(values = c("m" = colour.m, "f" = colour.f)) +
+  
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed, color = "navy") + 
+  # Add perfect correlation line
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", linewidth=line.width, alpha = alpha.ci) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(-1.5, 30), breaks = seq(from = 0, to = 30, by = 5)) +
+  scale_x_continuous(limits = c(-1.5, 30), breaks = seq(from = 0, to = 30, by = 5)) +
+  labs(
+  x = expression("ET"[1] ~ Delta ~ "MMPO"[dot(V) * O[2 * max]] * " (%)"), 
+  y = expression("ET"[2] ~ Delta ~ "MMPO"[dot(V) * O[2 * max]] * " (%)")) +
+  theme(axis.line = element_line(linewidth = axis.width),
+        text = element_text(size = text.size),
+        legend.position = "none")  
+
+
+# VO2max
+panel.f <- test_data_long %>% 
+  filter(variable == "vo2.max") %>% 
+  select(id, sex, period, variable, p.change.pre.post) %>%
+  pivot_wider(names_from = period,
+              values_from = p.change.pre.post) %>% 
+  select(id, sex, "1", "2") %>%
+  ggplot(., aes(x=`1`, y=`2`, colour = sex, fill = sex)) +
+  scale_colour_manual(values = c("m" = colour.m, "f" = colour.f)) +
+  scale_fill_manual(values = c("m" = colour.m, "f" = colour.f)) +
+
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed,color = "navy") + # Add perfect correlation line
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", linewidth=line.width, alpha = alpha.ci) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(-2, 25), breaks = seq(from = 0, to = 25, by = 5)) +
+  scale_x_continuous(limits = c(-2, 25), breaks = seq(from = 0, to = 25, by = 5)) +
+   labs(
+    x = expression("ET"[1] ~ Delta ~ dot(V) * O[2 * max] * "  (%) "), 
+    y = expression("ET"[2] ~ Delta ~ dot(V) * O[2 * max] * "  (%) ")) +
+  theme(axis.line = element_line(linewidth = axis.width),
+        text = element_text(size = text.size),
+        legend.position = "none")  
+
+
+# Figure 3 D-F: MPOvo2max, MMPO15min, and VO2max
+panels.d.e.f <- plot_grid(panel.d, panel.e, panel.f, 
+                             ncol = 3, rel_widths = c(1, 1, 1), rel_heights = c(1, 1, 1)) +
+  
+  # Name panels
+  draw_plot_label(x = c(0, 0.33, 0.66), 
+                  y = c(0.99, 0.99, 0.99), 
+                  label = c("D", "E", "F"), 
+                  size = text.size) +
+
+  # Panel D
+  # Males
+  draw_plot_label(x = 0.09, 
+                y = c(0.97, 0.91),
+                label = c("ICC = 0.17 [0.00, 0.48]", "r = 0.25 [-0.21, 0.61]"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0,
+                color = colour.m) +
+  # Females
+  draw_plot_label(x = 0.15, 
+                y = c(0.34, 0.28),
+                label = c("ICC = 0.48 [0.01, 0.67]", "r = 0.54 [0.14, 0.79]"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0,
+                color = colour.f) +
+  # Interaction
+  draw_plot_label(x = 0.28, 
+                y = c(0.56),
+                label = c("♀× ♂"),
+                size = interaction.text.size,
+                fontface = "plain",
+                hjust = 0.5) +
+  draw_plot_label(x = 0.28, 
+                y = c(0.50),
+                label = c("p = 0.352"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0.5) +
+
+  # Panel E
+  # Males
+  draw_plot_label(x = 0.415,
+                y = c(0.97, 0.91), 
+                label = c("ICC = 0.19 [0.00, 0.47]", "r = 0.25 [-0.20, 0.62]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0,
+                color = colour.m) +
+  # Females
+  draw_plot_label(x = 0.48,
+                y = c(0.34, 0.28), 
+                label = c("ICC = 0.36 [0.00, 0.59]", "r = 0.35 [-0.10, 0.68]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0,
+                color = colour.f) +
+  # Interaction
+  draw_plot_label(x = 0.62, 
+                y = c(0.56),
+                label = c("♀× ♂"),
+                size = interaction.text.size,
+                fontface = "plain",
+                hjust = 0.5) +
+  draw_plot_label(x = 0.62, 
+                y = c(0.50),
+                label = c("p = 0.849"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0.5) +
+
+  # Panel F
+  # Males
+  draw_plot_label(x = 0.75, 
+                y = c(0.97, 0.91), 
+                label = c("ICC = 0.00 [0.00, 0.42] ", "r = -0.30 [-0.65, 0.15]"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0,
+                color = colour.m) +
+  # Females
+  draw_plot_label(x = 0.82,
+                y = c(0.34, 0.28), 
+                label = c("ICC = 0.26 [0.00, 0.52]", "r = 0.24 [-0.21, 0.61]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0,
+                color = colour.f) +
+  # Interaction
+  draw_plot_label(x = 0.95, 
+                y = c(0.56),
+                label = c("♀× ♂"),
+                size = interaction.text.size,
+                fontface = "plain",
+                hjust = 0.5) +
+  draw_plot_label(x = 0.95, 
+                y = c(0.50),
+                label = c("p = 0.094"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0.5) 
+  
+
+
+```
+
+
+
+```{r}
+#| label: Figure 6ghi
+
+
+# PO 15-min
+panel.g <- test_data_long %>% 
+  filter(variable == "watt.15tt.bm") %>% 
+  select(id, period, sex, variable, change.pre.post) %>% 
+  pivot_wider(names_from = period,
+              values_from = change.pre.post) %>% 
+  select(id, sex, "1", "2") %>%
+  ggplot(., aes(x=`1`, y=`2`, colour = sex, fill = sex)) +
+  scale_colour_manual(values = c("m" = colour.m, "f" = colour.f)) +
+  scale_fill_manual(values = c("m" = colour.m, "f" = colour.f)) +
+
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed,color = "navy") + 
+  # Add perfect correlation line
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", linewidth=line.width, alpha = alpha.ci) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(-0.3, 0.8), breaks = seq(from = -0.2, to = 0.8, by = 0.2)) +
+  scale_x_continuous(limits = c(-0.3, 0.8), breaks = seq(from = -0.2, to = 0.8, by = 0.2)) +
+  labs(x = expression("ET"[1] ~ Delta ~ "MMPO"[15-min]*"  (W ∙ kg bm"^-1 * ") "), 
+       y = expression("ET"[2] ~ Delta ~ "MMPO"[15-min]*"  (W ∙ kg bm"^-1 * ") ")) +
+  theme(axis.line = element_line(linewidth = axis.width),  
+        text = element_text(size = text.size),
+        legend.position = "none")  
+
+
+# PO VO2max
+panel.h <- test_data_long %>% 
+  filter(variable == "watt.max.bm") %>% 
+  select(id, sex, period, variable, change.pre.post) %>%
+  pivot_wider(names_from = period,
+              values_from = change.pre.post) %>% 
+  select(id, sex, "1", "2") %>%
+  ggplot(., aes(x=`1`, y=`2`, colour = sex, fill = sex)) +
+  scale_colour_manual(values = c("m" = colour.m, "f" = colour.f)) +
+  scale_fill_manual(values = c("m" = colour.m, "f" = colour.f)) +
+  
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed, color = "navy") + 
+  # Add perfect correlation line
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", linewidth=line.width, alpha = alpha.ci) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(-0.1, 0.8), breaks = seq(from = 0, to = 0.8, by = 0.2)) +
+  scale_x_continuous(limits = c(-0.1, 0.8), breaks = seq(from = 0, to = 0.8, by = 0.2)) +
+  labs(
+  x = expression("ET"[1] ~ Delta ~ "MMPO"[dot(V) * O[2 * max]] * " (W ∙ kg bm"^-1 * ")"), 
+  y = expression("ET"[2] ~ Delta ~ "MMPO"[dot(V) * O[2 * max]] * " (W ∙ kg bm"^-1 * ")")) +
+  theme(axis.line = element_line(linewidth = axis.width),
+        text = element_text(size = text.size),
+        legend.position = "none")  
+
+
+
+# VO2max
+panel.i <- test_data_long %>% 
+  filter(variable == "vo2.max.bm") %>% 
+  select(id, sex, period, variable, change.pre.post) %>%
+  pivot_wider(names_from = period,
+              values_from = change.pre.post) %>% 
+  select(id, sex, "1", "2") %>%
+  ggplot(., aes(x=`1`, y=`2`, colour = sex, fill = sex)) +
+  scale_colour_manual(values = c("m" = colour.m, "f" = colour.f)) +
+  scale_fill_manual(values = c("m" = colour.m, "f" = colour.f)) +
+
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed,color = "navy") + # Add perfect correlation line
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", linewidth=line.width, alpha = alpha.ci) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(-2, 8), breaks = seq(from = -2, to = 8, by = 2)) +
+  scale_x_continuous(limits = c(-2, 8), breaks = seq(from = -2, to = 8, by = 2)) +
+  labs(
+    x = expression("ET"[1] ~ Delta ~ dot(V) * O[2 * max] * "  (mL ∙ min"^-1 * " ∙ kg bm"^-1 * ") "), 
+    y = expression("ET"[2] ~ Delta ~ dot(V) * O[2 * max] * "  (mL ∙ min"^-1 * " ∙ kg bm"^-1 * ") ")) +
+  theme(axis.line = element_line(linewidth = axis.width),
+        text = element_text(size = text.size),
+        legend.position = "none")  
+
+
+
+# Figure 6 G-I: MPOvo2max, MMPO15min, and VO2max
+panels.g.h.i <- plot_grid(panel.g, panel.h, panel.i, 
+                             ncol = 3, rel_widths = c(1, 1, 1), rel_heights = c(1, 1, 1)) +
+  
+  # Name panels
+  draw_plot_label(x = c(0, 0.33, 0.66), 
+                  y = c(0.99, 0.99, 0.99), 
+                  label = c("G", "H", "I"), 
+                  size = text.size) +
+
+  # Panel G
+  # Males
+  draw_plot_label(x = 0.09, 
+                y = c(0.97, 0.91),
+                label = c("ICC = 0.00 [0.00, 0.42]", "r = 0.10 [-0.35, 0.51]"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0,
+                color = colour.m) +
+  # Females
+  draw_plot_label(x = 0.15, 
+                y = c(0.34, 0.28),
+                label = c("ICC = 0.44 [0.00, 0.65]", "r = 0.46 [0.03, 0.74]"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0,
+                color = colour.f) +
+  # Interaction
+  draw_plot_label(x = 0.28, 
+                y = c(0.60),
+                label = c("♀× ♂"),
+                size = interaction.text.size,
+                fontface = "plain",
+                hjust = 0.5) +
+  draw_plot_label(x = 0.28, 
+                y = c(0.54),
+                label = c("p = 0.239"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0.5) +
+
+  # Panel H
+  # Males
+  draw_plot_label(x = 0.42,
+                y = c(0.97, 0.91), 
+                label = c("ICC = 0.00 [0.00, 0.42]", "r = 0.07 [-0.37, 0.49]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0,
+                color = colour.m) +
+  # Females
+  draw_plot_label(x = 0.48,
+                y = c(0.34, 0.28), 
+                label = c("ICC = 0.56 [0.13, 0.73]", "r = 0.56 [0.18, 0.80]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0,
+                color = colour.f) +
+  # Interaction
+  draw_plot_label(x = 0.62, 
+                y = c(0.60),
+                label = c("♀× ♂"),
+                size = interaction.text.size,
+                fontface = "plain",
+                hjust = 0.5) +
+  draw_plot_label(x = 0.62, 
+                y = c(0.54),
+                label = c("p = 0.162"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0.5) +
+
+  # Panel I
+  # Males
+  draw_plot_label(x = 0.75, 
+                y = c(0.97, 0.91), 
+                label = c("ICC = 0.00 [0.00, 0.42]", "r = -0.14 [-0.54, 0.31]"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0,
+                color = colour.m) +
+  # Females
+  draw_plot_label(x = 0.82,
+                y = c(0.34, 0.28), 
+                label = c("ICC = 0.31 [0.00, 0.55]", "r = 0.30 [-0.15, 0.65]"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0,
+                color = colour.f) +
+  # Interaction
+  draw_plot_label(x = 0.95, 
+                y = c(0.60),
+                label = c("♀× ♂"),
+                size = interaction.text.size,
+                fontface = "plain",
+                hjust = 0.5) +
+  draw_plot_label(x = 0.95, 
+                y = c(0.54),
+                label = c("p = 0.194"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0.5) 
+
+
+```
+
+
+```{r}
+#| label: Figure 6jkl
+
+
+# PO 15-min
+panel.j <- test_data_long %>% 
+  filter(variable == "watt.15tt.lbm") %>% 
+  select(id, period, sex, variable, change.pre.post) %>% 
+  pivot_wider(names_from = period,
+              values_from = change.pre.post) %>% 
+  select(id, sex, "1", "2") %>%
+  ggplot(., aes(x=`1`, y=`2`, colour = sex, fill = sex)) +
+  scale_colour_manual(values = c("m" = colour.m, "f" = colour.f)) +
+  scale_fill_manual(values = c("m" = colour.m, "f" = colour.f)) +
+
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed,color = "navy") + 
+  # Add perfect correlation line
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", linewidth=line.width, alpha = alpha.ci) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(-0.2, 1.0), breaks = seq(from = -0.2, to = 1.0, by = 0.2)) +
+  scale_x_continuous(limits = c(-0.2, 1.0), breaks = seq(from = -0.2, to = 1.0, by = 0.2)) +
+  labs(x = expression("ET"[1] ~ Delta ~ "MMPO"[15-min]*"  (W ∙ kg lbm"^-1 * ") "), 
+       y = expression("ET"[2] ~ Delta ~ "MMPO"[15-min]*"  (W ∙ kg lbm"^-1 * ") ")) +
+  theme(axis.line = element_line(linewidth = axis.width),  
+        text = element_text(size = text.size),
+        legend.position = "none")  
+panel.j
+
+
+# PO VO2max
+panel.k <- test_data_long %>% 
+  filter(variable == "watt.max.lbm") %>% 
+  select(id, sex, period, variable, change.pre.post) %>%
+  pivot_wider(names_from = period,
+              values_from = change.pre.post) %>% 
+  select(id, sex, "1", "2") %>%
+  ggplot(., aes(x=`1`, y=`2`, colour = sex, fill = sex)) +
+  scale_colour_manual(values = c("m" = colour.m, "f" = colour.f)) +
+  scale_fill_manual(values = c("m" = colour.m, "f" = colour.f)) +
+  
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed, color = "navy") + 
+  # Add perfect correlation line
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", linewidth=line.width, alpha = alpha.ci) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(-0.2, 1.2), breaks = seq(from = -0, to = 1.2, by = 0.4)) +
+  scale_x_continuous(limits = c(-0.2, 1.2), breaks = seq(from = -0, to = 1.2, by = 0.4)) +
+  labs(
+  x = expression("ET"[1] ~ Delta ~ "MMPO"[dot(V) * O[2 * max]] * " (W ∙ kg lbm"^-1 * ")"), 
+  y = expression("ET"[2] ~ Delta ~ "MMPO"[dot(V) * O[2 * max]] * " (W ∙ kg lbm"^-1 * ")")) +
+  theme(axis.line = element_line(linewidth = axis.width),
+        text = element_text(size = text.size),
+        legend.position = "none")  
+
+
+
+# VO2max
+panel.l <- test_data_long %>% 
+  filter(variable == "vo2.max.lbm") %>% 
+  select(id, sex, period, variable, change.pre.post) %>%
+  pivot_wider(names_from = period,
+              values_from = change.pre.post) %>% 
+  select(id, sex, "1", "2") %>%
+  ggplot(., aes(x=`1`, y=`2`, colour = sex, fill = sex)) +
+  scale_colour_manual(values = c("m" = colour.m, "f" = colour.f)) +
+  scale_fill_manual(values = c("m" = colour.m, "f" = colour.f)) +
+
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth=line.width.dashed,color = "navy") + # Add perfect correlation line
+  geom_point(size=point.size) +
+  geom_smooth(method="lm", linewidth=line.width, alpha = alpha.ci) +
+  theme_pubr() +
+  scale_y_continuous(limits = c(-2, 13), breaks = seq(from = 0, to = 12, by = 4)) +
+  scale_x_continuous(limits = c(-2, 13), breaks = seq(from = 0, to = 12, by = 4)) +
+   labs(
+    x = expression("ET"[1] ~ Delta ~ dot(V) * O[2 * max] * "  (mL ∙ min"^-1 * " ∙ kg lbm"^-1 * ") "), 
+    y = expression("ET"[2] ~ Delta ~ dot(V) * O[2 * max] * "  (mL ∙ min"^-1 * " ∙ kg lbm"^-1 * ") ")) +
+  theme(axis.line = element_line(linewidth = axis.width),
+        text = element_text(size = text.size),
+        legend.position = "none")  
+
+
+
+# Figure 6 G-I: MPOvo2max, MMPO15min, and VO2max
+panels.j.k.l <- plot_grid(panel.j, panel.k, panel.l, 
+                             ncol = 3, rel_widths = c(1, 1, 1), rel_heights = c(1, 1, 1)) +
+  
+  # Name panels
+  draw_plot_label(x = c(0, 0.33, 0.66), 
+                  y = c(0.99, 0.99, 0.99), 
+                  label = c("J", "K", "L"), 
+                  size = text.size) +
+
+  # Panel L
+  # Males
+  draw_plot_label(x = 0.09, 
+                y = c(0.97, 0.91),
+                label = c("ICC = 0.15 [0.00, 0.46]", "r = 0.25 [-0.20, 0.62]"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0,
+                color = colour.m) +
+  # Females
+  draw_plot_label(x = 0.15, 
+                y = c(0.34, 0.28),
+                label = c("ICC = 0.39 [0.00, 0.60]", "r = 0.38 [-0.07, 0.69]"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0,
+                color = colour.f) +
+  # Interaction
+  draw_plot_label(x = 0.28, 
+                y = c(0.56),
+                label = c("♀× ♂"),
+                size = interaction.text.size,
+                fontface = "plain",
+                hjust = 0.5) +
+  draw_plot_label(x = 0.28, 
+                y = c(0.50),
+                label = c("p = 0.586"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0.5) +
+
+  # Panel K
+  # Males
+  draw_plot_label(x = 0.42,
+                y = c(0.97, 0.91), 
+                label = c("ICC = 0.03 [0.00, 0.43]", "r = 0.08 [-0.36, 0.50]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0,
+                color = colour.m) +
+  # Females
+  draw_plot_label(x = 0.48,
+                y = c(0.34, 0.28), 
+                label = c("ICC = 0.36 [0.00, 0.57]", "r = 0.40 [-0.04, 0.71]"), 
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0,
+                color = colour.f) +
+  # Interaction
+  draw_plot_label(x = 0.62, 
+                y = c(0.56),
+                label = c("♀× ♂"),
+                size = interaction.text.size,
+                fontface = "plain",
+                hjust = 0.5) +
+  draw_plot_label(x = 0.62, 
+                y = c(0.50),
+                label = c("p = 0.344"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0.5) +
+
+  # Panel L
+  # Males
+  draw_plot_label(x = 0.75, 
+                y = c(0.97, 0.91), 
+                label = c("ICC = 0.01 [0.00, 0.43]", "r = -0.01 [-0.44, 0.42]"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0,
+                color = colour.m) +
+  # Females
+  draw_plot_label(x = 0.82,
+                y = c(0.34, 0.28), 
+                label = c("ICC = 0.32 [0.00, 0.54]", "r = 0.34 [-0.10, 0.67]"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0,
+                color = colour.f) +
+  # Interaction
+  draw_plot_label(x = 0.95, 
+                y = c(0.56),
+                label = c("♀× ♂"),
+                size = interaction.text.size,
+                fontface = "plain",
+                hjust = 0.5) +
+  draw_plot_label(x = 0.95, 
+                y = c(0.50),
+                label = c("p = 0.219"),
+                size = reproducibility.text.size,
+                fontface = "plain",
+                hjust = 0.5) 
+
+
+```
+
+
+
+```{r}
+#| label: Figure 6
+
+# Combine all panels to one figure
+
+figure.6 <- plot_grid(panels.a.b.c,
+                      panels.d.e.f,
+                      panels.g.h.i,
+                      panels.j.k.l,
+                      
+                      ncol = 1, rel_heights = c(1, 1, 1, 1, 1), align = "vh")
+figure.6
+
+
+
+# Determinants figure to pdf
+saveRDS(figure.6, "./figures/rds/figure.6.RDS")
+
+ggsave("figures/figure.6.png", plot = figure.6, width = 18, height = 24, 
+       dpi = 800,
+       units = "cm", device= png())
+
+
+
+```

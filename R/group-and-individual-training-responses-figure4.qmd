@@ -6,8 +6,6 @@ editor_options:
   chunk_output_type: console
 ---
 
-
-
 ```{r}
 #| label: Packages 
 
@@ -24,11 +22,9 @@ test_data_wide <- readRDS(file = "data/derivedData/test_data_wide")
 
 ```
 
-
 ## Figure 4: Group and individual training responses
 
 Creating a figure with 6 panels showing A-C) individual and group mean development in training outcomes in period 1 and 2, and D-F) individual and group mean change scores in period 2 and 2.
-
 
 ### Panels A-C: individual and group mean development in training outcomes in period 1 and 2
 
@@ -99,7 +95,7 @@ coefs <- broom.mixed::tidy(model, conf.int = TRUE) %>% print()
 fig.diff <- coefs %>%
   filter(term == "period2") %>%
   ggplot(aes(y = estimate, x = reorder(term, estimate))) +
-  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-4.06,ymax=4.06), fill="aliceblue") + # Adding colour to typical error = 4.06
+  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-Inf,ymax=8.12), fill="aliceblue") + # Adding colour to 2x typical error
   geom_errorbar(aes(ymin = conf.low, ymax = conf.high), linewidth = line.width.individual, width = errorbar.width.diff, color = "black") +
   geom_point(size = point.size, color = "black") +
   geom_hline(yintercept = 0, linetype = 2, linewidth = line.width.individual) +
@@ -185,7 +181,7 @@ coefs <- broom.mixed::tidy(model, conf.int = TRUE) %>% print()
 fig.diff <- coefs %>%
   filter(term == "period2") %>%
   ggplot(aes(y = estimate, x = reorder(term, estimate))) +
-  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-6.96,ymax=6.96), fill="aliceblue") + # Adding colure to typical error = 6.96
+  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-Inf,ymax=13.92), fill="aliceblue") + # Adding colure to 2 x typical error
   geom_errorbar(aes(ymin = conf.low, ymax = conf.high), linewidth = line.width.individual, width = errorbar.width.diff, color = "#8b104e") + # Make red to show that grater change in ET-2 compared to ET-1
   geom_point(size = point.size, color = "#8b104e") +
   geom_hline(yintercept = 0, linetype = 2, linewidth = line.width.individual) +
@@ -271,7 +267,7 @@ coefs <- broom.mixed::tidy(model, conf.int = TRUE) %>% print()
 fig.diff <- coefs %>%
   filter(term == "period2") %>%
   ggplot(aes(y = estimate, x = reorder(term, estimate))) +
-  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-61.1,ymax=61.1), fill="aliceblue") + # Adding colure to typical error = 61.1 ml/min
+  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-Inf,ymax=Inf), fill="aliceblue") + # Adding colure to 2 x typical error
   geom_errorbar(aes(ymin = conf.low, ymax = conf.high), linewidth = line.width.individual, width = errorbar.width.diff, color = "black") +
   geom_point(size = point.size, color = "black") +
   geom_hline(yintercept = 0, linetype = 2, linewidth = line.width.individual) +
@@ -327,18 +323,17 @@ figure.4.a.b.c
 
 ```
 
-
-
 ### Panels D-F: individual and group mean change scores in period 2 and 2
 
 ```{r}
 #| label: Figure 4 D-F
 
 # Saving sizes and widths of points and lines so easy to adjust
-point.size = 0.2
+point.size = 0.8
+point.size.mean = 1
 line.width = 0.3
 line.width.individual = 0.3
-line.width.mean = 0.5
+whisker.width = 0.1
 axis.width = 0.4
 text.size = 9
 
@@ -355,11 +350,21 @@ fig.watt.15tt.change <- test_data_long %>%
   
   filter(variable == "watt.15tt") %>% 
   ggplot(aes(x=period, y=change.pre.post)) +
-  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-4.06,ymax=4.06), fill="aliceblue") + # Adding colure to typical error = 4.06
+  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-8.12,ymax=8.12), fill="aliceblue") + # Adding colure to 2 x typical error
   geom_hline(yintercept = 0, linetype = "dashed", linewidth = line.width.individual, colour = "black") +
   geom_line(aes(group = id), linewidth = line.width.individual, colour = "grey30", alpha = 0.3) +
+  geom_point(aes(colour = period, group = id), size = point.size) +
+  scale_colour_manual(values = c("ET-1" = "#228B22", "ET-2" = "#882255")) +
   theme_pubr() +
-  stat_summary(aes(colour="mean",group=1), fun = mean, geom="line", linewidth = line.width.mean, colour = "black") +
+  # ET2 on RIGHT
+  stat_summary(data = ~ subset(.x, period == "ET-2"), fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", width = whisker.width, linewidth = line.width, colour = "black", position = position_nudge(x = 0.20)) +
+  
+  stat_summary(data = ~ subset(.x, period == "ET-2"), fun = mean, geom = "point", size = point.size.mean, colour = "black", position = position_nudge(x = 0.20)) +
+  
+  # ET1 summary on LEFT
+  stat_summary(data = ~ subset(.x, period == "ET-1"), fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", width = whisker.width, linewidth = line.width, colour = "black", position = position_nudge(x = -0.20)) +
+  
+  stat_summary(data = ~ subset(.x, period == "ET-1"), fun = mean, geom = "point", size = point.size.mean, colour = "black", position = position_nudge(x = -0.20)) +
 
   scale_y_continuous(limits = c(-20, 70), breaks = seq(from = -20, to = 70, by = 10)) +
   scale_x_discrete(
@@ -388,11 +393,24 @@ fig.watt.max.change <- test_data_long %>%
   
   filter(variable == "watt.max") %>% 
   ggplot(aes(x=period, y=change.pre.post)) +
-  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-6.96,ymax=6.96), fill="aliceblue") + # Adding colure to typical error = 6.96
+  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-13.92,ymax=13.92), fill="aliceblue") + # Adding colure to 2x typical error
   geom_hline(yintercept = 0, linetype = "dashed", linewidth = line.width.individual, colour = "black") +
 
   geom_line(aes(group = id), linewidth = line.width.individual, colour = "grey30", alpha = 0.3) +
-  stat_summary(aes(colour="mean",group=1), fun = mean, geom="line", linewidth = line.width.mean, colour = "black") +
+  
+  geom_point(aes(colour = period, group = id), size = point.size) +
+  scale_colour_manual(values = c("ET-1" = "#228B22", "ET-2" = "#882255")) +
+  theme_pubr() +
+  # ET2 on RIGHT
+  stat_summary(data = ~ subset(.x, period == "ET-2"), fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", width = whisker.width, linewidth = line.width, colour = "black", position = position_nudge(x = 0.20)) +
+  
+  stat_summary(data = ~ subset(.x, period == "ET-2"), fun = mean, geom = "point", size = point.size.mean, colour = "black", position = position_nudge(x = 0.20)) +
+  
+  # ET1 summary on LEFT
+  stat_summary(data = ~ subset(.x, period == "ET-1"), fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", width = whisker.width, linewidth = line.width, colour = "black", position = position_nudge(x = -0.20)) +
+  
+  stat_summary(data = ~ subset(.x, period == "ET-1"), fun = mean, geom = "point", size = point.size.mean, colour = "black", position = position_nudge(x = -0.20)) +
+  
   scale_y_continuous(limits = c(-20, 70), breaks = seq(from = -20, to = 70, by = 10)) +
   scale_x_discrete(
     labels = c(
@@ -403,7 +421,8 @@ fig.watt.max.change <- test_data_long %>%
   theme_pubr() +
   theme(axis.line = element_line(linewidth = axis.width),
         text = element_text(size = text.size),
-        axis.title.x = element_blank()) 
+        axis.title.x = element_blank(),
+        legend.position = "none") 
 fig.watt.max.change
 
 fig.watt.max.change <- fig.watt.max.change + 
@@ -419,12 +438,23 @@ fig.vo2.max.change <- test_data_long %>%
   
   filter(variable == "vo2.max") %>% 
   ggplot(aes(x=period, y=change.pre.post)) +
-  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-61.1,ymax=61.1), fill="aliceblue") + # Adding colure to typical error = 61.1 ml/min
+  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-122.2,ymax=122.2), fill="aliceblue") + # Adding colure to 2x typical error 
   geom_hline(yintercept = 0, linetype = "dashed", linewidth = line.width.individual, colour = "black") +
   geom_line(aes(group = id), linewidth = line.width.individual, colour = "grey30", alpha = 0.3) +
-  stat_summary(aes(colour="mean",group=1), fun = mean, geom="line", linewidth = line.width.mean, colour = "black") +
-  scale_y_continuous(limits = c(-200, 700), breaks = seq(from = -200, to = 700, by = 100)) +
   
+  geom_point(aes(colour = period, group = id), size = point.size) +
+  scale_colour_manual(values = c("ET-1" = "#228B22", "ET-2" = "#882255")) +
+  # ET2 on RIGHT
+  stat_summary(data = ~ subset(.x, period == "ET-2"), fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", width = whisker.width, linewidth = line.width, colour = "black", position = position_nudge(x = 0.20)) +
+  
+  stat_summary(data = ~ subset(.x, period == "ET-2"), fun = mean, geom = "point", size = point.size.mean, colour = "black", position = position_nudge(x = 0.20)) +
+  
+  # ET1 summary on LEFT
+  stat_summary(data = ~ subset(.x, period == "ET-1"), fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", width = whisker.width, linewidth = line.width, colour = "black", position = position_nudge(x = -0.20)) +
+  
+  stat_summary(data = ~ subset(.x, period == "ET-1"), fun = mean, geom = "point", size = point.size.mean, colour = "black", position = position_nudge(x = -0.20)) +
+  
+  scale_y_continuous(limits = c(-200, 700), breaks = seq(from = -200, to = 700, by = 100)) +
   scale_x_discrete(
     labels = c(
     "ET-1"  = expression("ET"[1]),
@@ -434,7 +464,8 @@ fig.vo2.max.change <- test_data_long %>%
   theme_pubr() +
   theme(axis.line = element_line(linewidth = axis.width),
         text = element_text(size = text.size),
-        axis.title.x = element_blank()) 
+        axis.title.x = element_blank(),
+        legend.position = "none") 
 fig.vo2.max.change 
 
 fig.vo2.max.change <- fig.vo2.max.change + 
@@ -459,9 +490,7 @@ figure.4.d.e.f
 
 ```
 
-
 ### Combining panels to one figure
-
 
 ```{r}
 #| label: Figure 4 A-F
@@ -479,7 +508,3 @@ ggsave("figures/figure.4.png", plot = figure.4, width =18, height = 28,
 
 
 ```
-
-
-
-

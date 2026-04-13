@@ -22,16 +22,13 @@ test_data_wide <- readRDS(file = "data/derivedData/test_data_wide")
 
 ```
 
-
 ## Training responses data
 
 1.  Mean training responses in training periods 1 and 2, and difference in change
 
 2.  Reproducibility of individual training responses
 
-
-
-### 1.  Mean training responses in training periods 1 and 2, and difference in change
+### 1. Mean training responses in training periods 1 and 2, and difference in change
 
 Mean (SD) of pre, post, and change scores in training periods 1 and 2.
 
@@ -40,7 +37,19 @@ Potential differences in group-level training responses were investigated by fit
 ```{r}
 #| label: Mean training responses
 
-## Mean (SD) of age, height, weight,and VO2max.kg at onset of period 1 to write in text in abstract and methods
+## Mean (SD) of pre values for demographic table 
+
+mean_values_pre_p1_data <- test_data_long %>% 
+  filter(period == "1") %>% 
+  select(id, period, sex, variable, pre) %>% 
+  group_by(variable, sex) %>% 
+  filter(variable %in% c("age", "height", "weight", "lean.mass.whole.body", "vo2.max", "vo2.max.bm", "watt.max", "watt.max.bm", "watt.15tt", "watt.15tt.bm")) %>% 
+  summarise(across(c(pre),
+                   list(mean_sd = ~sprintf("%.1f (%.1f)", mean(.x, na.rm = TRUE), sd(.x, na.rm = TRUE))),
+                   .names = "{.col}")) %>%
+  pivot_wider(names_from = sex,
+              values_from = pre) %>% print()
+
 ## Mean (SD) at pre and post in both training interventions, as well as change scores to add in table
 
 mean_values_timepoints_data <- test_data_long %>% 
@@ -59,7 +68,7 @@ flextable(mean_values_timepoints_data)
 
 ## Difference in changes between period 1 and 2
 
-variables <- c("watt.max", "watt.15tt", "vo2.max", "p.vo2.15tt", "ge.submax", 
+variables <- c("watt.max", "watt.15tt", "vo2.max", "vo2.max.bm", "p.vo2.15tt", "ge.submax", 
                "hbmass", "bv", "rbcv", "pv", "hct", "hb.c",
                "fiber.area", "cd", "cf",
                "weight", "lean.mass.whole.body") 
@@ -151,8 +160,7 @@ flextable(results)
 
 ```
 
-
-### 2.  Reproducibility of individual training responses
+### 2. Reproducibility of individual training responses
 
 ```{r}
 #| label: Reproducibility of individual training responses
@@ -524,7 +532,3 @@ print(results)
 
 
 ```
-
-
-
-
