@@ -325,7 +325,9 @@ test_data_wide <- cycling_data %>%
   full_join(hematological_data, by = c("id", "period", "timepoint")) %>%
   full_join(ferritin_data, by = c("id", "period", "timepoint")) %>%
   
-  mutate(vo2.max.bm = vo2.max/weight,
+  mutate(bmi = weight/((height/100)^2), # weight in kg, height in meters
+          
+         vo2.max.bm = vo2.max/weight,
          vo2.max.lbm = vo2.max/lean.mass.whole.body,
     
          watt.max.bm = watt.max/weight,
@@ -359,7 +361,7 @@ test_data_wide <- cycling_data %>%
   filter(!(id %in% c("4", "6", "11", "12", "13" ,"20", "21", "25", "35", "37", "48", "52", "53", "54", "56", "57"))) %>% 
   # Filtering participants not completing training periods 1 and 2
   
-  filter(!(id %in% c("101", "102", "103", "104", "105", "106", "107", "108", "109", "110", "111", "112", "114", "115", "116", "117"))) 
+  filter(!(id %in% c("101", "102", "103", "104", "105", "106", "107", "108", "109", "110", "111", "112", "114", "115", "116", "117")))
   # Filtering participants in other group
   
  

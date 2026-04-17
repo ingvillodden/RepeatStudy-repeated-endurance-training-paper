@@ -18,11 +18,11 @@ library(ggh4x)
 library(ggpubr)
 library(cowplot)
 library(Hmisc)
+library(broom.mixed)
 
 # Modeling
 library(lme4)
 library(emmeans)
 library(psych)
 
-# Additional 
-library(broom.mixed)
+

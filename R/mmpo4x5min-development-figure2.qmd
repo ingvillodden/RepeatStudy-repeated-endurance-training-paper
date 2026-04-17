@@ -19,13 +19,9 @@ session_data <- readRDS(file = "data/derivedData/session_data")
 
 ```
 
-
-
 ## Figure 2: Development of MMPO 4x5-min per two weeks of training
 
 Creating a figure showing the development of MMPO 4x5-min per two weeks of training in training periods 1 and 2 (5 sessions per period) with a point estimate indicating whether the mean response slopes of training periods 1 and 2 differ.
-
-
 
 ```{r}
 #| label: Figure 2

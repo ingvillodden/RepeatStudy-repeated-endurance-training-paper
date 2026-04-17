@@ -18,6 +18,7 @@ Creating a figure with 3 x 4 panels showing associations between individual chan
 point.size = 0.85
 line.width = 0.55
 line.width.dashed = 0.3
+axis.width = 0.5
 text.size = 8.5
 title.text.size = 8
 reproducibility.text.size = 8.5
@@ -428,8 +429,8 @@ panel.g <- test_data_long %>%
   theme_pubr() +
   scale_y_continuous(limits = c(-0.3, 0.8), breaks = seq(from = -0.2, to = 0.8, by = 0.2)) +
   scale_x_continuous(limits = c(-0.3, 0.8), breaks = seq(from = -0.2, to = 0.8, by = 0.2)) +
-  labs(x = expression("ET"[1] ~ Delta ~ "MMPO"[15-min]*"  (W ∙ kg bm"^-1 * ") "), 
-       y = expression("ET"[2] ~ Delta ~ "MMPO"[15-min]*"  (W ∙ kg bm"^-1 * ") ")) +
+  labs(x = expression("ET"[1] ~ Delta ~ "MMPO"[15-min]*"  (W ∙ kg"^-1 * ") "), 
+       y = expression("ET"[2] ~ Delta ~ "MMPO"[15-min]*"  (W ∙ kg"^-1 * ") ")) +
   theme(axis.line = element_line(linewidth = axis.width),  
         text = element_text(size = text.size),
         legend.position = "none")  
@@ -454,8 +455,8 @@ panel.h <- test_data_long %>%
   scale_y_continuous(limits = c(-0.1, 0.8), breaks = seq(from = 0, to = 0.8, by = 0.2)) +
   scale_x_continuous(limits = c(-0.1, 0.8), breaks = seq(from = 0, to = 0.8, by = 0.2)) +
   labs(
-  x = expression("ET"[1] ~ Delta ~ "MMPO"[dot(V) * O[2 * max]] * " (W ∙ kg bm"^-1 * ")"), 
-  y = expression("ET"[2] ~ Delta ~ "MMPO"[dot(V) * O[2 * max]] * " (W ∙ kg bm"^-1 * ")")) +
+  x = expression("ET"[1] ~ Delta ~ "MMPO"[dot(V) * O[2 * max]] * " (W ∙ kg"^-1 * ")"), 
+  y = expression("ET"[2] ~ Delta ~ "MMPO"[dot(V) * O[2 * max]] * " (W ∙ kg"^-1 * ")")) +
   theme(axis.line = element_line(linewidth = axis.width),
         text = element_text(size = text.size),
         legend.position = "none")  
@@ -480,8 +481,8 @@ panel.i <- test_data_long %>%
   scale_y_continuous(limits = c(-2, 8), breaks = seq(from = -2, to = 8, by = 2)) +
   scale_x_continuous(limits = c(-2, 8), breaks = seq(from = -2, to = 8, by = 2)) +
   labs(
-    x = expression("ET"[1] ~ Delta ~ dot(V) * O[2 * max] * "  (mL ∙ min"^-1 * " ∙ kg bm"^-1 * ") "), 
-    y = expression("ET"[2] ~ Delta ~ dot(V) * O[2 * max] * "  (mL ∙ min"^-1 * " ∙ kg bm"^-1 * ") ")) +
+    x = expression("ET"[1] ~ Delta ~ dot(V) * O[2 * max] * "  (mL ∙ min"^-1 * " ∙ kg"^-1 * ") "), 
+    y = expression("ET"[2] ~ Delta ~ dot(V) * O[2 * max] * "  (mL ∙ min"^-1 * " ∙ kg"^-1 * ") ")) +
   theme(axis.line = element_line(linewidth = axis.width),
         text = element_text(size = text.size),
         legend.position = "none")  
@@ -540,7 +541,7 @@ panels.g.h.i <- plot_grid(panel.g, panel.h, panel.i,
                 color = colour.m) +
   # Females
   draw_plot_label(x = 0.48,
-                y = c(0.34, 0.28), 
+                y = c(0.35, 0.29), 
                 label = c("ICC = 0.56 [0.13, 0.73]", "r = 0.56 [0.18, 0.80]"), 
                 size = reproducibility.text.size,
                 fontface = "plain",
@@ -617,8 +618,8 @@ panel.j <- test_data_long %>%
   theme_pubr() +
   scale_y_continuous(limits = c(-0.2, 1.0), breaks = seq(from = -0.2, to = 1.0, by = 0.2)) +
   scale_x_continuous(limits = c(-0.2, 1.0), breaks = seq(from = -0.2, to = 1.0, by = 0.2)) +
-  labs(x = expression("ET"[1] ~ Delta ~ "MMPO"[15-min]*"  (W ∙ kg lbm"^-1 * ") "), 
-       y = expression("ET"[2] ~ Delta ~ "MMPO"[15-min]*"  (W ∙ kg lbm"^-1 * ") ")) +
+  labs(x = expression("ET"[1] ~ Delta ~ "MMPO"[15-min]*"  (W ∙ kg LBM"^-1 * ") "), 
+       y = expression("ET"[2] ~ Delta ~ "MMPO"[15-min]*"  (W ∙ kg LBM"^-1 * ") ")) +
   theme(axis.line = element_line(linewidth = axis.width),  
         text = element_text(size = text.size),
         legend.position = "none")  
@@ -644,8 +645,8 @@ panel.k <- test_data_long %>%
   scale_y_continuous(limits = c(-0.2, 1.2), breaks = seq(from = -0, to = 1.2, by = 0.4)) +
   scale_x_continuous(limits = c(-0.2, 1.2), breaks = seq(from = -0, to = 1.2, by = 0.4)) +
   labs(
-  x = expression("ET"[1] ~ Delta ~ "MMPO"[dot(V) * O[2 * max]] * " (W ∙ kg lbm"^-1 * ")"), 
-  y = expression("ET"[2] ~ Delta ~ "MMPO"[dot(V) * O[2 * max]] * " (W ∙ kg lbm"^-1 * ")")) +
+  x = expression("ET"[1] ~ Delta ~ "MMPO"[dot(V) * O[2 * max]] * " (W ∙ kg LBM"^-1 * ")"), 
+  y = expression("ET"[2] ~ Delta ~ "MMPO"[dot(V) * O[2 * max]] * " (W ∙ kg LBM"^-1 * ")")) +
   theme(axis.line = element_line(linewidth = axis.width),
         text = element_text(size = text.size),
         legend.position = "none")  
@@ -670,8 +671,8 @@ panel.l <- test_data_long %>%
   scale_y_continuous(limits = c(-2, 13), breaks = seq(from = 0, to = 12, by = 4)) +
   scale_x_continuous(limits = c(-2, 13), breaks = seq(from = 0, to = 12, by = 4)) +
    labs(
-    x = expression("ET"[1] ~ Delta ~ dot(V) * O[2 * max] * "  (mL ∙ min"^-1 * " ∙ kg lbm"^-1 * ") "), 
-    y = expression("ET"[2] ~ Delta ~ dot(V) * O[2 * max] * "  (mL ∙ min"^-1 * " ∙ kg lbm"^-1 * ") ")) +
+    x = expression("ET"[1] ~ Delta ~ dot(V) * O[2 * max] * "  (mL ∙ min"^-1 * " ∙ kg LBM"^-1 * ") "), 
+    y = expression("ET"[2] ~ Delta ~ dot(V) * O[2 * max] * "  (mL ∙ min"^-1 * " ∙ kg LBM"^-1 * ") ")) +
   theme(axis.line = element_line(linewidth = axis.width),
         text = element_text(size = text.size),
         legend.position = "none")  
@@ -730,7 +731,7 @@ panels.j.k.l <- plot_grid(panel.j, panel.k, panel.l,
                 color = colour.m) +
   # Females
   draw_plot_label(x = 0.48,
-                y = c(0.34, 0.28), 
+                y = c(0.35, 0.29), 
                 label = c("ICC = 0.36 [0.00, 0.57]", "r = 0.40 [-0.04, 0.71]"), 
                 size = reproducibility.text.size,
                 fontface = "plain",
