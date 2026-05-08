@@ -53,7 +53,8 @@ diff_outcomes <- test_data_long %>%
   pivot_wider(names_from = period, values_from = change.pre.post) %>% 
   mutate(diff.p1.p2 = (`2` - `1`)) %>%
   select(id, variable, diff.p1.p2) %>%
-  full_join(diff_selected_outcomes, by = c("id", "variable", "diff.p1.p2"))
+  full_join(diff_selected_outcomes, by = c("id", "variable", "diff.p1.p2")) 
+
 
 
 # Define physiological and performance outcomes
@@ -111,6 +112,8 @@ bootstrap_r2_r <- function(data, outcome, predictor, nboot = 1000, seed = 123) {
     r_high      = cor_res$conf.int[2]
   )
 }
+
+
 
 # Compute all combinations of performance and physiological outcomes
 results <- purrr::cross_df(list(

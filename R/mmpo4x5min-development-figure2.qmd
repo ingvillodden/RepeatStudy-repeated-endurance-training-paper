@@ -45,24 +45,27 @@ session.watt.4x5_p1_p2 <- session_data %>%
   mutate(session.watt.4x5 = ifelse(period == 1 & id == 46 & session.n == 5, 180.75, session.watt.4x5)) %>%
   mutate(session.watt.4x5 = ifelse(period == 2 & id == 49 & session.n == 5, 162.5, session.watt.4x5)) %>%
   mutate(session.watt.4x5 = ifelse(period == 2 & id == 5 & session.n == 4, 160, session.watt.4x5)) %>%
-  mutate(session.watt.4x5 = ifelse(period == 1 & id == 9 & session.n == 5, 228.75, session.watt.4x5)) 
+  mutate(session.watt.4x5 = ifelse(period == 1 & id == 9 & session.n == 5, 228.75, session.watt.4x5)) %>% 
+  mutate(session.n = as.numeric(session.n))
 
 
 
 # Creating a linear mixed model to estimate the change slope in period 1 and period 2
 
 # Fit your model
-model <- lmer(session.watt.4x5 ~ as.numeric(session.n)*period + 
-                (as.numeric(session.n)*period | id),
+model <- lmer(session.watt.4x5 ~ session.n*period + 
+                (session.n*period | id),
               data = session.watt.4x5_p1_p2)
 
+#emtrends(model, ~ period, var = "session.n")
+#emtrends(model, ~ period, var = "session.n") %>% pairs(infer = TRUE)
 
 #Parametric bootstrap of slopes
 boot_fun <- function(fit) {
   fe <- fixef(fit)
 
-  slope_p1   <- fe["as.numeric(session.n)"]
-  slope_diff <- fe["as.numeric(session.n):period2"]
+  slope_p1   <- fe["session.n"]
+  slope_diff <- fe["session.n:period2"]
   slope_p2   <- slope_p1 + slope_diff
 
   c(
@@ -87,8 +90,8 @@ boot_res <- bootMer(
 # Extract estimates and bootstrap CIs
 fe <- fixef(model)
 
-slope_p1_est   <- fe["as.numeric(session.n)"]
-slope_diff_est <- fe["as.numeric(session.n):period2"]
+slope_p1_est   <- fe["session.n"]
+slope_diff_est <- fe["session.n:period2"]
 slope_p2_est   <- slope_p1_est + slope_diff_est
 
 boot_mat <- boot_res$t
@@ -137,7 +140,7 @@ fig.diff.session.watt.4x5.p1.p2 <- slopes %>%
   geom_hline(yintercept = 0, linetype = 2, linewidth = line.width) +
   scale_y_continuous(position = "right", limits = c(-2, 6), breaks = seq(from = -2, to = 6, by = 2)) +
   labs(x = expression(""), 
-       y = expression(~ Delta ~ " ET"[2] * "  vs. " ~ Delta ~  " ET"[1] * "  (W ∙ two weeks"^-1 * ") ")) + 
+       y = expression(~ Delta ~ " TP"[2] * "  vs. " ~ Delta ~  " TP"[1] * "  (W ∙ two weeks"^-1 * ") ")) + 
   theme_pubr() +
   theme(
     text = element_text(size = text.size),         # General text size
@@ -172,23 +175,27 @@ fig.session.watt.4x5.p1.p2 <- session.watt.4x5_p1_p2 %>%
     # Factor levels become plotmath strings
     period = factor(period,
                     levels = c("1", "2"),
-                    labels = c("ET[1]", "ET[2]"))
+                    labels = c("TP[1]", "TP[2]"))
   ) %>% 
   ggplot(aes(x = session.n, y = session.watt.4x5)) +
   
+  # MEan line
   stat_summary(aes(group = period, colour = period),
                fun = mean, geom = "line",
                position = position_dodge(width = 0.2)) +
   
+  scale_colour_manual(values = c("#228B22", "#8b104e")) +
+  scale_fill_manual(values = c("#228B22", "#8b104e")) +
+  
   coord_cartesian(ylim = c(130, 200)) +
   geom_smooth(method="lm",
-              aes(group = period, colour = period),
-              linewidth = line.width.dashed, linetype = "dashed") +
+              aes(group = period, colour = period, fill = period),
+              linewidth = line.width.dashed, linetype = "dashed",
+              alpha = 0.10) +
   geom_hline(yintercept = 145.1, linewidth = line.width.dashed,
              linetype = "dashed", colour = "black") +
   
   theme_pubr() +
-  scale_colour_manual(values = c("#228B22", "#8b104e")) +
   
   scale_x_discrete(labels = c("0", "2", "4", "6", "8"),
                    expand = expansion(add = c(0, 0))) +

@@ -83,7 +83,9 @@ calculate_reliability <- function(data, period_filter = NULL, variables) {
 }
 
 # List of variables to calculate CV and TE for
-variables <- c("vo2.max", "watt.max", "watt.15tt") # Only measures with double pre-tests
+variables <- c("vo2.max", "watt.max", "watt.15tt", 
+               "vo2.max.bm", "watt.max.bm", "watt.15tt.bm",
+               "rer.max", "lac.max", "rpe.max") # Only measures with double pre-tests
 
 # Apply the function to calculate CV and TE for each period and both periods combined
 reliability_p1 <- calculate_reliability(cv_calculation_cycling_data_p1_p2, period_filter = 1, variables = variables)  
@@ -119,8 +121,7 @@ outcomes <- c("watt.max", "watt.15tt", "vo2.max", "p.vo2.15tt", "ge.submax",
                "hbmass", "bv", "rbcv", "pv", "hct", "hb.c",
                "weight", "lean.mass.whole.body", 
                "ferritin.level",
-               "fiber.area", "cd", "cf"
-               ) 
+               "fiber.area", "cd", "cf") 
 
 
 ## Intraclass correlation coefficients
@@ -315,134 +316,170 @@ print(r_summary)
 
 # Preparing rer values from VO2max testing
 
-  
-# Mean (SD) rer values
-mean_rer_values_data <- test_data_long %>% 
-  filter(variable == "rer.max") %>% 
-  select(id, period, pre, post) %>% 
-  pivot_wider(
-    names_from = period,
-    values_from = c(pre, post),
-    names_glue = "{.value}_p{period}") %>% 
-  summarise(across(c(pre_p1, pre_p2, post_p1, post_p2),
-                   list(mean_sd = ~sprintf("%.2f (%.2f)", mean(.x, na.rm = TRUE), sd(.x, na.rm = TRUE))),
-                   .names = "{.col}")) %>% print()
 
-rer_values_data <- test_data_wide %>% 
-  select(id, period, timepoint, rer.max) %>% 
-  mutate(variable = "rer.max") %>% 
-  rename(value = rer.max) %>% print()
-  
-
-## Intraclass correlation coefficient
-outcomes <- c("rer.max")
+# Difference in pre-to-post changes in RER in the two training periods and ICC of pre-to-post changes in RER between the two training periods are evaluated together with the other variables in Table 4 in the file "training-responses-analysis"
 
 
-# Function to estimate ICCs with bootstrap CIs
-analyze_trainability_icc_ci <- function(
-  data,
-  outcome,
-  nboot = 1000, # 1000 resamples
-  seed  = 123
-) {
 
-  message("Running model for: ", outcome)  # Progress message for tracking
+# Comparison of RER values at all timepoints
+rer_data <- test_data_wide %>% 
+  select(id, period, timepoint, rer.max) %>% print()
 
-  # Subset data to the current outcome and ensure correct factor structure
-  df <- data %>%
-    filter(variable == outcome) %>%
-    mutate(
-      timepoint = factor(timepoint),  # Timepoint as categorical fixed effect
-      id     = factor(id)       # Participant ID as grouping factor
-    ) %>% 
-    filter(!is.na(value))
-  
-
-  # Skip analysis if too few observations are available
-  if (nrow(df) < 5) {
-    warning("Too few observations for ", outcome)
-    return(NULL)
-  }
-
-  
-  # Fit linear mixed-effects model to change scores
-  # Fixed effect: training period (adjusts for systematic differences)
-  # Random intercept: participant ID (captures between-individual variability)
-  mod <- lmer(
-    value ~ 1 + (1 | id),
-    data = df,
-    REML = TRUE  # REML provides less biased variance component estimates
-  )
-summary(mod)
-  # Function to extract ICC from a fitted mixed-effects model
-  extract_icc <- function(fit) {
-    vc <- as.data.frame(VarCorr(fit))         # Extract variance components
-    vb <- vc$vcov[vc$grp == "id"]             # Between-individual variance
-    vw <- vc$vcov[vc$grp == "Residual"]       # Within-individual variance
-    vb / (vb + vw)                            # ICC calculation
-  }
-
-  # Compute point estimate of the ICC
-  ICC_between <- extract_icc(mod)
-
-  
-  # Parametric bootstrap to obtain 95% CI for ICC
-  boot_res <- tryCatch(
-    bootMer(
-      mod,
-      FUN   = extract_icc,     # Statistic to bootstrap (ICC)
-      nsim  = nboot,           # Number of bootstrap replicates
-      use.u = TRUE,            # Preserve random-effects structure
-      type  = "parametric",    # Parametric bootstrap
-      seed  = seed
-    ),
-    error = function(e) NULL   # Gracefully handle bootstrap failures
-  )
-
-  # Extract percentile-based 95% confidence interval
-  ci <- if (!is.null(boot_res)) {
-    quantile(
-      boot_res$t[, 1],
-      probs = c(0.025, 0.975),
-      na.rm = TRUE
-    )
-  } else {
-    c(NA, NA)                  # Return NA if CI cannot be estimated
-  }
-
-  # Return tidy summary for the current outcome
-  tibble(
-    Variable         = outcome,
-    ICC_between      = ICC_between,
-    ICC_between_low  = ci[1],
-    ICC_between_high = ci[2]
-  )
-}
+rer_data$period <- factor(rer_data$period, levels = c("1", "2"))
+rer_data$timepoint <- factor(rer_data$timepoint, levels = c("pre", "post"))
 
 
-# Run ICC analysis across all outcomes
-results_icc <- map_dfr(
-  outcomes,                     # Vector of outcome variable names
-  analyze_trainability_icc_ci,  # Analysis function
-  data  = rer_values_data,       # Long-format dataset
-  nboot = 1000                  # Number of bootstrap replicates
+mod <- lmer(rer.max ~ period*timepoint + (1|id), data = rer_data)
+emm <- emmeans(mod, ~ period * timepoint)
+pairs(emm, adjust = "bonferroni", infer = TRUE)
+contrast(emmeans(mod, ~ period * timepoint), 
+         interaction = "pairwise",
+         infer = TRUE)
+
+
+
+# Comparison of [La-] values at all timepoints
+lac_data <- test_data_wide %>% 
+  select(id, period, timepoint, lac.max) %>% print()
+
+
+lac_data$period <- factor(lac_data$period, levels = c("1", "2"))
+lac_data$timepoint <- factor(lac_data$timepoint, levels = c("pre", "post"))
+
+
+mod <- lmer(lac.max ~ period*timepoint + (1|id), data = lac_data)
+emm <- emmeans(mod, ~ period * timepoint)
+pairs(emm, adjust = "bonferroni", infer = TRUE)
+contrast(emmeans(mod, ~ period * timepoint), 
+         interaction = "pairwise",
+         infer = TRUE)
+
+
+# Comparison of RPE values at all timepoints
+rpe_data <- test_data_wide %>% 
+  select(id, period, timepoint, rpe.max) %>% print()
+
+
+rpe_data$period <- factor(rpe_data$period, levels = c("1", "2"))
+rpe_data$timepoint <- factor(rpe_data$timepoint, levels = c("pre", "post"))
+
+
+mod <- lmer(rpe.max ~ period*timepoint + (1|id), data = rpe_data)
+emm <- emmeans(mod, ~ period * timepoint)
+pairs(emm, adjust = "bonferroni", infer = TRUE)
+contrast(emmeans(mod, ~ period * timepoint), 
+         interaction = "pairwise",
+         infer = TRUE)
+
+
+
+
+
+
+# ICC of RER values at all timepoints
+
+# Prepare data
+df <- test_data_wide %>%
+  select(id, period, timepoint, rer.max) %>%
+  rename(value = rer.max) %>%
+  filter(!is.na(value)) %>%
+  mutate(id = factor(id))
+
+# Fit model
+mod <- lmer(value ~ 1 + (1 | id), data = df, REML = TRUE)
+
+# Extract ICC
+vc <- as.data.frame(VarCorr(mod))
+vb <- vc$vcov[vc$grp == "id"]
+vw <- vc$vcov[vc$grp == "Residual"]
+icc <- vb / (vb + vw)
+
+# Bootstrap CI
+boot_res <- bootMer(
+  mod,
+  FUN = extract_icc,
+  nsim = 1000,
+  use.u = TRUE,
+  type = "parametric",
+  seed = 123
 )
 
+ci <- quantile(boot_res$t[,1], c(0.025, 0.975), na.rm = TRUE)
 
-# Format ICC results for presentation
-icc_summary <- results_icc %>%
-  mutate(
-    `ICC Between` = sprintf(
-      "%.2f [%.2f, %.2f]",      # Format ICC with 95% CI
-      ICC_between,
-      ICC_between_low,
-      ICC_between_high
-    )
-  ) %>%
-  select(Variable, `ICC Between`)  # Keep only relevant columns
+# Print nicely
+sprintf("ICC = %.2f [%.2f, %.2f]", icc, ci[1], ci[2])
 
-# Print final table
-print(icc_summary, width = Inf)
+
+
+# ICC of [La-] values at all timepoints
+
+# Prepare data
+df <- test_data_wide %>%
+  select(id, period, timepoint, lac.max) %>%
+  rename(value = lac.max) %>%
+  filter(!is.na(value)) %>%
+  mutate(id = factor(id))
+
+# Fit model
+mod <- lmer(value ~ 1 + (1 | id), data = df, REML = TRUE)
+
+# Extract ICC
+vc <- as.data.frame(VarCorr(mod))
+vb <- vc$vcov[vc$grp == "id"]
+vw <- vc$vcov[vc$grp == "Residual"]
+icc <- vb / (vb + vw)
+
+# Bootstrap CI
+boot_res <- bootMer(
+  mod,
+  FUN = extract_icc,
+  nsim = 1000,
+  use.u = TRUE,
+  type = "parametric",
+  seed = 123
+)
+
+ci <- quantile(boot_res$t[,1], c(0.025, 0.975), na.rm = TRUE)
+
+# Print nicely
+sprintf("ICC = %.2f [%.2f, %.2f]", icc, ci[1], ci[2])
+
+
+
+# ICC of RPE values at all timepoints
+
+# Prepare data
+df <- test_data_wide %>%
+  select(id, period, timepoint, rpe.max) %>%
+  rename(value = rpe.max) %>%
+  filter(!is.na(value)) %>%
+  mutate(id = factor(id))
+
+# Fit model
+mod <- lmer(value ~ 1 + (1 | id), data = df, REML = TRUE)
+
+# Extract ICC
+vc <- as.data.frame(VarCorr(mod))
+vb <- vc$vcov[vc$grp == "id"]
+vw <- vc$vcov[vc$grp == "Residual"]
+icc <- vb / (vb + vw)
+
+# Bootstrap CI
+boot_res <- bootMer(
+  mod,
+  FUN = extract_icc,
+  nsim = 1000,
+  use.u = TRUE,
+  type = "parametric",
+  seed = 123
+)
+
+ci <- quantile(boot_res$t[,1], c(0.025, 0.975), na.rm = TRUE)
+
+# Print nicely
+sprintf("ICC = %.2f [%.2f, %.2f]", icc, ci[1], ci[2])
+
+
 
 ```
 

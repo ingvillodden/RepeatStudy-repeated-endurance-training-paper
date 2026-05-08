@@ -113,7 +113,8 @@ panel.c <- test_data_long %>%
 
 # Figure 3 A-C: MPOvo2max, MMPO15min, and VO2max
 panels.a.b.c <- plot_grid(panel.a, panel.b, panel.c, 
-                             ncol = 3, rel_widths = c(1, 1, 1), rel_heights = c(1, 1, 1)) +
+                          ncol = 3, align = "h", axis = "tb", 
+                          rel_widths = c(1, 1, 1), rel_heights = c(1, 1, 1)) +
   
   # Name panels
   draw_plot_label(x = c(0, 0.33, 0.66), 
@@ -300,7 +301,8 @@ panel.f <- test_data_long %>%
 
 # Figure 3 D-F: MPOvo2max, MMPO15min, and VO2max
 panels.d.e.f <- plot_grid(panel.d, panel.e, panel.f, 
-                             ncol = 3, rel_widths = c(1, 1, 1), rel_heights = c(1, 1, 1)) +
+                          ncol = 3, align = "h", axis = "tb", 
+                          rel_widths = c(1, 1, 1), rel_heights = c(1, 1, 1)) +
   
   # Name panels
   draw_plot_label(x = c(0, 0.33, 0.66), 
@@ -429,8 +431,8 @@ panel.g <- test_data_long %>%
   theme_pubr() +
   scale_y_continuous(limits = c(-0.3, 0.8), breaks = seq(from = -0.2, to = 0.8, by = 0.2)) +
   scale_x_continuous(limits = c(-0.3, 0.8), breaks = seq(from = -0.2, to = 0.8, by = 0.2)) +
-  labs(x = expression("ET"[1] ~ Delta ~ "MMPO"[15-min]*"  (W ∙ kg"^-1 * ") "), 
-       y = expression("ET"[2] ~ Delta ~ "MMPO"[15-min]*"  (W ∙ kg"^-1 * ") ")) +
+  labs(x = expression("ET"[1] ~ Delta ~ "MMPO"[15-min]*"  (W ∙ kg BM"^-1 * ") "), 
+       y = expression("ET"[2] ~ Delta ~ "MMPO"[15-min]*"  (W ∙ kg BM"^-1 * ") ")) +
   theme(axis.line = element_line(linewidth = axis.width),  
         text = element_text(size = text.size),
         legend.position = "none")  
@@ -455,8 +457,8 @@ panel.h <- test_data_long %>%
   scale_y_continuous(limits = c(-0.1, 0.8), breaks = seq(from = 0, to = 0.8, by = 0.2)) +
   scale_x_continuous(limits = c(-0.1, 0.8), breaks = seq(from = 0, to = 0.8, by = 0.2)) +
   labs(
-  x = expression("ET"[1] ~ Delta ~ "MMPO"[dot(V) * O[2 * max]] * " (W ∙ kg"^-1 * ")"), 
-  y = expression("ET"[2] ~ Delta ~ "MMPO"[dot(V) * O[2 * max]] * " (W ∙ kg"^-1 * ")")) +
+  x = expression("ET"[1] ~ Delta ~ "MMPO"[dot(V) * O[2 * max]] * " (W ∙ kg BM"^-1 * ")"), 
+  y = expression("ET"[2] ~ Delta ~ "MMPO"[dot(V) * O[2 * max]] * " (W ∙ kg BM"^-1 * ")")) +
   theme(axis.line = element_line(linewidth = axis.width),
         text = element_text(size = text.size),
         legend.position = "none")  
@@ -481,8 +483,8 @@ panel.i <- test_data_long %>%
   scale_y_continuous(limits = c(-2, 8), breaks = seq(from = -2, to = 8, by = 2)) +
   scale_x_continuous(limits = c(-2, 8), breaks = seq(from = -2, to = 8, by = 2)) +
   labs(
-    x = expression("ET"[1] ~ Delta ~ dot(V) * O[2 * max] * "  (mL ∙ min"^-1 * " ∙ kg"^-1 * ") "), 
-    y = expression("ET"[2] ~ Delta ~ dot(V) * O[2 * max] * "  (mL ∙ min"^-1 * " ∙ kg"^-1 * ") ")) +
+    x = expression("ET"[1] ~ Delta ~ dot(V) * O[2 * max] * "  (mL ∙ min"^-1 * " ∙ kg BM"^-1 * ") "), 
+    y = expression("ET"[2] ~ Delta ~ dot(V) * O[2 * max] * "  (mL ∙ min"^-1 * " ∙ kg BM"^-1 * ") ")) +
   theme(axis.line = element_line(linewidth = axis.width),
         text = element_text(size = text.size),
         legend.position = "none")  
@@ -491,7 +493,8 @@ panel.i <- test_data_long %>%
 
 # Figure 6 G-I: MPOvo2max, MMPO15min, and VO2max
 panels.g.h.i <- plot_grid(panel.g, panel.h, panel.i, 
-                             ncol = 3, rel_widths = c(1, 1, 1), rel_heights = c(1, 1, 1)) +
+                          ncol = 3, align = "h", axis = "tb", 
+                          rel_widths = c(1, 1, 1), rel_heights = c(1, 1, 1)) +
   
   # Name panels
   draw_plot_label(x = c(0, 0.33, 0.66), 
@@ -510,7 +513,7 @@ panels.g.h.i <- plot_grid(panel.g, panel.h, panel.i,
                 color = colour.m) +
   # Females
   draw_plot_label(x = 0.15, 
-                y = c(0.34, 0.28),
+                y = c(0.355, 0.295),
                 label = c("ICC = 0.44 [0.00, 0.65]", "r = 0.46 [0.03, 0.74]"),
                 size = reproducibility.text.size,
                 fontface = "plain",
@@ -541,7 +544,7 @@ panels.g.h.i <- plot_grid(panel.g, panel.h, panel.i,
                 color = colour.m) +
   # Females
   draw_plot_label(x = 0.48,
-                y = c(0.35, 0.29), 
+                y = c(0.355, 0.295), 
                 label = c("ICC = 0.56 [0.13, 0.73]", "r = 0.56 [0.18, 0.80]"), 
                 size = reproducibility.text.size,
                 fontface = "plain",
@@ -572,7 +575,7 @@ panels.g.h.i <- plot_grid(panel.g, panel.h, panel.i,
                 color = colour.m) +
   # Females
   draw_plot_label(x = 0.82,
-                y = c(0.34, 0.28), 
+                y = c(0.355, 0.295), 
                 label = c("ICC = 0.31 [0.00, 0.55]", "r = 0.30 [-0.15, 0.65]"),
                 size = reproducibility.text.size,
                 fontface = "plain",
@@ -681,7 +684,8 @@ panel.l <- test_data_long %>%
 
 # Figure 6 G-I: MPOvo2max, MMPO15min, and VO2max
 panels.j.k.l <- plot_grid(panel.j, panel.k, panel.l, 
-                             ncol = 3, rel_widths = c(1, 1, 1), rel_heights = c(1, 1, 1)) +
+                          ncol = 3, align = "h", axis = "tb", 
+                          rel_widths = c(1, 1, 1), rel_heights = c(1, 1, 1)) +
   
   # Name panels
   draw_plot_label(x = c(0, 0.33, 0.66), 
@@ -689,7 +693,7 @@ panels.j.k.l <- plot_grid(panel.j, panel.k, panel.l,
                   label = c("J", "K", "L"), 
                   size = text.size) +
 
-  # Panel L
+  # Panel J
   # Males
   draw_plot_label(x = 0.09, 
                 y = c(0.97, 0.91),
@@ -700,7 +704,7 @@ panels.j.k.l <- plot_grid(panel.j, panel.k, panel.l,
                 color = colour.m) +
   # Females
   draw_plot_label(x = 0.15, 
-                y = c(0.34, 0.28),
+                y = c(0.355, 0.295),
                 label = c("ICC = 0.39 [0.00, 0.60]", "r = 0.38 [-0.07, 0.69]"),
                 size = reproducibility.text.size,
                 fontface = "plain",
@@ -731,7 +735,7 @@ panels.j.k.l <- plot_grid(panel.j, panel.k, panel.l,
                 color = colour.m) +
   # Females
   draw_plot_label(x = 0.48,
-                y = c(0.35, 0.29), 
+                y = c(0.355, 0.295), 
                 label = c("ICC = 0.36 [0.00, 0.57]", "r = 0.40 [-0.04, 0.71]"), 
                 size = reproducibility.text.size,
                 fontface = "plain",
@@ -762,7 +766,7 @@ panels.j.k.l <- plot_grid(panel.j, panel.k, panel.l,
                 color = colour.m) +
   # Females
   draw_plot_label(x = 0.82,
-                y = c(0.34, 0.28), 
+                y = c(0.355, 0.295), 
                 label = c("ICC = 0.32 [0.00, 0.54]", "r = 0.34 [-0.10, 0.67]"),
                 size = reproducibility.text.size,
                 fontface = "plain",
@@ -797,7 +801,12 @@ figure.6 <- plot_grid(panels.a.b.c,
                       panels.g.h.i,
                       panels.j.k.l,
                       
-                      ncol = 1, rel_heights = c(1, 1, 1, 1, 1), align = "vh")
+                      ncol = 1, 
+                      align = "v",
+                      axis = "lr",
+                      rel_heights = c(1, 1, 1, 1, 1))
+
+
 figure.6
 
 

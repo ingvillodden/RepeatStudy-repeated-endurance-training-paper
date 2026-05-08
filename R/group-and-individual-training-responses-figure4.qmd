@@ -79,8 +79,8 @@ fig.timepoints <- test_data_wide %>%
     coord_cartesian(ylim = c(25, 300), clip = "off") +
     
    
-    annotate("text", x = 1.5, y = -17, label = expression(ET[1]), size = 3.3) +
-   annotate("text", x = 3.5, y = -17, label = expression(ET[2]), size = 3.3)
+    annotate("text", x = 1.5, y = -17, label = expression(TP[1]), size = 3.3) +
+   annotate("text", x = 3.5, y = -17, label = expression(TP[2]), size = 3.3)
 
 
 fig.timepoints
@@ -102,7 +102,7 @@ fig.diff <- coefs %>%
   scale_y_continuous(position = "right", limits = c(-7, 17), breaks = seq(from = -5, to = 15, by = 5)) +
   theme_pubr() +
   labs(x = expression(""), 
-       y = expression(~ Delta ~ " ET"[2] * "  vs. " ~ Delta ~  " ET"[1] * "  (W)"))+
+       y = expression(~ Delta ~ " TP"[2] * "  vs. " ~ Delta ~  " TP"[1] * "  (W)"))+
   theme(text=element_text(size=text.size)) +
   theme(axis.text.x = element_blank(),  # Remove x-axis text
         axis.ticks.x = element_blank(),  # Remove x-axis ticks
@@ -166,8 +166,8 @@ fig.timepoints <- test_data_wide %>%
     coord_cartesian(ylim = c(80, 400), clip = "off") +
     
    
-    annotate("text", x = 1.5, y = 30, label = expression(ET[1]), size = 3.3) +
-   annotate("text", x = 3.5, y = 30, label = expression(ET[2]), size = 3.3)
+    annotate("text", x = 1.5, y = 30, label = expression(TP[1]), size = 3.3) +
+   annotate("text", x = 3.5, y = 30, label = expression(TP[2]), size = 3.3)
 
 fig.timepoints
 
@@ -188,7 +188,7 @@ fig.diff <- coefs %>%
   scale_y_continuous(position = "right", limits = c(-7, 17), breaks = seq(from = -5, to = 17, by = 5)) +
   theme_pubr() +
   labs(x = expression(""), 
-       y = expression(~ Delta ~ " ET"[2] * "  vs. " ~ Delta ~  " ET"[1] * "  (W)"))+
+       y = expression(~ Delta ~ " TP"[2] * "  vs. " ~ Delta ~  " TP"[1] * "  (W)"))+
   theme(text=element_text(size=text.size)) +
   theme(axis.text.x = element_blank(),  # Remove x-axis text
         axis.ticks.x = element_blank(),  # Remove x-axis ticks
@@ -253,8 +253,8 @@ fig.timepoints <- test_data_wide %>%
     coord_cartesian(ylim = c(600, 5000), clip = "off") +
     
    
-    annotate("text", x = 1.5, y = -60, label = expression(ET[1]), size = 3.3) +
-   annotate("text", x = 3.5, y = -60, label = expression(ET[2]), size = 3.3)
+    annotate("text", x = 1.5, y = -60, label = expression(TP[1]), size = 3.3) +
+   annotate("text", x = 3.5, y = -60, label = expression(TP[2]), size = 3.3)
 fig.timepoints
 
 
@@ -274,7 +274,7 @@ fig.diff <- coefs %>%
   scale_y_continuous(position = "right", limits = c(-62, 110), breaks = seq(from = -50, to = 100, by = 50)) +
   theme_pubr() +
   labs(x = expression(""), 
-       y = expression(~ Delta ~ " ET"[2] * "  vs. " ~ Delta ~  " ET"[1] * "  (mL ∙ min"^-1 * ") "))+
+       y = expression(~ Delta ~ " TP"[2] * "  vs. " ~ Delta ~  " TP"[1] * "  (mL ∙ min"^-1 * ") "))+
   theme(text=element_text(size=text.size)) +
   theme(axis.text.x = element_blank(),  # Remove x-axis text
         axis.ticks.x = element_blank(),  # Remove x-axis ticks
@@ -331,7 +331,7 @@ figure.4.a.b.c
 # Saving sizes and widths of points and lines so easy to adjust
 point.size = 0.8
 point.size.mean = 1
-line.width = 0.3
+line.width = 0.4
 line.width.individual = 0.3
 whisker.width = 0.1
 axis.width = 0.4
@@ -357,20 +357,20 @@ fig.watt.15tt.change <- test_data_long %>%
   scale_colour_manual(values = c("ET-1" = "#228B22", "ET-2" = "#882255")) +
   theme_pubr() +
   # ET2 on RIGHT
-  stat_summary(data = ~ subset(.x, period == "ET-2"), fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", width = whisker.width, linewidth = line.width, colour = "black", position = position_nudge(x = 0.20)) +
+  stat_summary(data = ~ subset(.x, period == "ET-2"), aes(colour = period), fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", width = whisker.width, linewidth = line.width,  position = position_nudge(x = 0.20)) +
   
-  stat_summary(data = ~ subset(.x, period == "ET-2"), fun = mean, geom = "point", size = point.size.mean, colour = "black", position = position_nudge(x = 0.20)) +
+  stat_summary(data = ~ subset(.x, period == "ET-2"), aes(colour = period), fun = mean, geom = "point", size = point.size.mean, position = position_nudge(x = 0.20)) +
   
   # ET1 summary on LEFT
-  stat_summary(data = ~ subset(.x, period == "ET-1"), fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", width = whisker.width, linewidth = line.width, colour = "black", position = position_nudge(x = -0.20)) +
+  stat_summary(data = ~ subset(.x, period == "ET-1"), aes(colour = period), fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", width = whisker.width, linewidth = line.width,  position = position_nudge(x = -0.20)) +
   
-  stat_summary(data = ~ subset(.x, period == "ET-1"), fun = mean, geom = "point", size = point.size.mean, colour = "black", position = position_nudge(x = -0.20)) +
+  stat_summary(data = ~ subset(.x, period == "ET-1"), aes(colour = period), fun = mean, geom = "point", size = point.size.mean, position = position_nudge(x = -0.20)) +
 
   scale_y_continuous(limits = c(-20, 70), breaks = seq(from = -20, to = 70, by = 10)) +
   scale_x_discrete(
     labels = c(
-    "ET-1"  = expression("ET"[1]),
-    "ET-2" = expression("ET"[2]))) +
+    "ET-1"  = expression("TP"[1]),
+    "ET-2" = expression("TP"[2]))) +
   
   labs(x = "Training period", y = expression(~ Delta ~ "MMPO"[15-min]*"  (W)")) +
   theme_pubr() +
@@ -402,20 +402,20 @@ fig.watt.max.change <- test_data_long %>%
   scale_colour_manual(values = c("ET-1" = "#228B22", "ET-2" = "#882255")) +
   theme_pubr() +
   # ET2 on RIGHT
-  stat_summary(data = ~ subset(.x, period == "ET-2"), fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", width = whisker.width, linewidth = line.width, colour = "black", position = position_nudge(x = 0.20)) +
+  stat_summary(data = ~ subset(.x, period == "ET-2"), aes(colour = period), fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", width = whisker.width, linewidth = line.width,  position = position_nudge(x = 0.20)) +
   
-  stat_summary(data = ~ subset(.x, period == "ET-2"), fun = mean, geom = "point", size = point.size.mean, colour = "black", position = position_nudge(x = 0.20)) +
+  stat_summary(data = ~ subset(.x, period == "ET-2"), aes(colour = period), fun = mean, geom = "point", size = point.size.mean, position = position_nudge(x = 0.20)) +
   
   # ET1 summary on LEFT
-  stat_summary(data = ~ subset(.x, period == "ET-1"), fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", width = whisker.width, linewidth = line.width, colour = "black", position = position_nudge(x = -0.20)) +
+  stat_summary(data = ~ subset(.x, period == "ET-1"), aes(colour = period), fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", width = whisker.width, linewidth = line.width,  position = position_nudge(x = -0.20)) +
   
-  stat_summary(data = ~ subset(.x, period == "ET-1"), fun = mean, geom = "point", size = point.size.mean, colour = "black", position = position_nudge(x = -0.20)) +
+  stat_summary(data = ~ subset(.x, period == "ET-1"), aes(colour = period), fun = mean, geom = "point", size = point.size.mean, position = position_nudge(x = -0.20)) +
   
   scale_y_continuous(limits = c(-20, 70), breaks = seq(from = -20, to = 70, by = 10)) +
   scale_x_discrete(
     labels = c(
-    "ET-1"  = expression("ET"[1]),
-    "ET-2" = expression("ET"[2]))) +
+    "ET-1"  = expression("TP"[1]),
+    "ET-2" = expression("TP"[2]))) +
   
   labs(x = "Training period", y = expression(~ Delta ~ "MMPO"[dot(V) * O[2 * max]] * " (W)")) +
   theme_pubr() +
@@ -445,20 +445,20 @@ fig.vo2.max.change <- test_data_long %>%
   geom_point(aes(colour = period, group = id), size = point.size) +
   scale_colour_manual(values = c("ET-1" = "#228B22", "ET-2" = "#882255")) +
   # ET2 on RIGHT
-  stat_summary(data = ~ subset(.x, period == "ET-2"), fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", width = whisker.width, linewidth = line.width, colour = "black", position = position_nudge(x = 0.20)) +
+  stat_summary(data = ~ subset(.x, period == "ET-2"), aes(colour = period), fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", width = whisker.width, linewidth = line.width,  position = position_nudge(x = 0.20)) +
   
-  stat_summary(data = ~ subset(.x, period == "ET-2"), fun = mean, geom = "point", size = point.size.mean, colour = "black", position = position_nudge(x = 0.20)) +
+  stat_summary(data = ~ subset(.x, period == "ET-2"), aes(colour = period), fun = mean, geom = "point", size = point.size.mean, position = position_nudge(x = 0.20)) +
   
   # ET1 summary on LEFT
-  stat_summary(data = ~ subset(.x, period == "ET-1"), fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", width = whisker.width, linewidth = line.width, colour = "black", position = position_nudge(x = -0.20)) +
+  stat_summary(data = ~ subset(.x, period == "ET-1"), aes(colour = period), fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", width = whisker.width, linewidth = line.width,  position = position_nudge(x = -0.20)) +
   
-  stat_summary(data = ~ subset(.x, period == "ET-1"), fun = mean, geom = "point", size = point.size.mean, colour = "black", position = position_nudge(x = -0.20)) +
+  stat_summary(data = ~ subset(.x, period == "ET-1"), aes(colour = period), fun = mean, geom = "point", size = point.size.mean, position = position_nudge(x = -0.20)) +
   
   scale_y_continuous(limits = c(-200, 700), breaks = seq(from = -200, to = 700, by = 100)) +
   scale_x_discrete(
     labels = c(
-    "ET-1"  = expression("ET"[1]),
-    "ET-2" = expression("ET"[2]))) +
+    "ET-1"  = expression("TP"[1]),
+    "ET-2" = expression("TP"[2]))) +
   
   labs(x = "Training period", y = expression(~ Delta ~ dot(V) * O[2 * max] * "  (mL ∙ min"^-1 * ") ")) +
   theme_pubr() +

@@ -37,15 +37,20 @@ Potential differences in group-level training responses were investigated by fit
 ```{r}
 #| label: Mean training responses
 
+
+
 ## Mean (SD) of pre values for demographic table (males and females, all participants are retrieved from the next code)
 
 mean_values_pre_p1_data <- test_data_long %>% 
   filter(period == "1") %>% 
   select(id, period, sex, variable, pre) %>% 
   group_by(variable, sex) %>% 
-  filter(variable %in% c("age", "height", "weight", "bmi", "lean.mass.whole.body", "vo2.max", "vo2.max.bm", "vo2.max.lbm", "watt.max", "watt.max.bm", "watt.15tt", "watt.15tt.bm")) %>% 
+  filter(variable %in% c("age", "height", "weight", "bmi", "lean.mass.whole.body", 
+                         "ldl", "hdl", "triglys", "glucose", "hs.crp", "c.peptid", "ferritin.level",
+                         "vo2.max", "vo2.max.bm", "vo2.max.lbm", 
+                         "watt.max", "watt.15tt")) %>% 
   summarise(across(c(pre),
-                   list(mean_sd = ~sprintf("%.1f (%.1f)", mean(.x, na.rm = TRUE), sd(.x, na.rm = TRUE))),
+                   list(mean_sd = ~sprintf("%.0f (%.0f)", mean(.x, na.rm = TRUE), sd(.x, na.rm = TRUE))),
                    .names = "{.col}")) %>%
   pivot_wider(names_from = sex,
               values_from = pre) %>% print()
@@ -55,7 +60,13 @@ mean_values_pre_p1_data <- test_data_long %>%
 mean_values_timepoints_data <- test_data_long %>% 
   group_by(period, variable) %>% 
 
-  filter(variable %in% c("age", "height", "weight", "bmi", "lean.mass.whole.body", "vo2.max", "vo2.max.bm", "vo2.max.lbm", "watt.max", "watt.15tt", "p.vo2.15tt", "ge.submax", "hbmass", "bv", "rbcv", "pv", "hct", "hb.c", "ferritin.level", "cs_umol.g.min", "had_umol.g.min", "fiber.area", "cd", "cf")) %>% 
+  filter(variable %in% c("age", "height", "weight", "bmi", "lean.mass.whole.body", 
+                         "vo2.max", "vo2.max.bm", "vo2.max.lbm", 
+                         "rer.max", "lac.max", "rpe.max", 
+                         "watt.max", "watt.15tt", 
+                         "p.vo2.15tt", "ge.submax", 
+                         "hbmass", "bv", "rbcv", "pv", "hct", "hb.c",  
+                         "cs_umol.g.min", "had_umol.g.min", "fiber.area", "cd", "cf")) %>% 
   summarise(across(c(pre, post, change.pre.post, p.change.pre.post),
                    list(mean_sd = ~sprintf("%.1f (%.1f)", mean(.x, na.rm = TRUE), sd(.x, na.rm = TRUE))),
                    .names = "{.col}")) %>% 
@@ -68,7 +79,7 @@ flextable(mean_values_timepoints_data)
 
 ## Difference in changes between period 1 and 2
 
-variables <- c("watt.max", "watt.15tt", "vo2.max", "vo2.max.bm", "vo2.max.lbm", "p.vo2.15tt", "ge.submax", 
+variables <- c("watt.15tt", "vo2.max", "vo2.max.bm", "vo2.max.lbm", "p.vo2.15tt", "ge.submax", 
                "hbmass", "bv", "rbcv", "pv", "hct", "hb.c",
                "fiber.area", "cd", "cf",
                "weight", "lean.mass.whole.body") 

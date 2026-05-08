@@ -157,7 +157,7 @@ filtered_per_data <- cycling.data %>%
   
   select(id, group, period, timepoint, watt.15tt = watt,
          vo2.15tt = vo2, rpe.15tt = rpe, lac.15tt = lac, hr.15tt = hr, 
-         ve.15tt = ve, rer.15tt = rer, p.vo2.15tt = rel.vo2) 
+         ve.15tt = ve, rer.15tt = rer, p.vo2.15tt = rel.vo2)
 
 
 
@@ -165,7 +165,7 @@ filtered_per_data <- cycling.data %>%
 
 all_timepoints_cycling_data <- filtered_max_data %>% 
   full_join(filtered_submax_data, by = c("id", "period", "timepoint", "group")) %>%
-  full_join(filtered_per_data, by = c("id", "period", "timepoint", "group")) %>% print()
+  full_join(filtered_per_data, by = c("id", "period", "timepoint", "group"))
   
 cycling_data <- all_timepoints_cycling_data %>% 
   filter(timepoint %in% c("pre1", "pre2")) %>%
@@ -298,15 +298,52 @@ ferritin_data <- iron_status.data %>%
   mutate(ferritin.level = as.numeric(iron_status)) %>% # Convert variable to numeric
   select(-iron_status) %>% 
   
-  filter(!(id %in% c("50", "53", "55"))) %>%
-  # Filter out id 50, 53 and 55 because not data at both pre period 1 and 2, and post period 1 (post period 2 was not measured)
+  filter(!(id %in% c("50", "55"))) %>% 
+  # Due to missing blood samples
+  
   
   mutate(id = as.numeric(as.character(id)), # Convert id to numeric
-         id = as.factor(id))  # Convert id back to a factor
+         id = as.factor(id)) %>% view() # Convert id back to a factor
 
 
 # Save as RDS for later use 
 #saveRDS(ferritin_data, file = "data/derivedData/ferritin_data")
+
+```
+
+
+### Other blood data
+
+```{r, LDL, HDL, triglyserides, glucose, crp, c peptide}
+
+blood_markers_data <- blood_variables.data %>% 
+  filter(group == "intervention") %>% 
+  select(-group) %>% 
+  select(-comment) %>% 
+  filter(timepoint %in% c(1, 2, 3, 4)) %>% 
+  # Timepoints 1 and 2 = pre and post period 1
+  # Timepoints 3 and 4 = pre and post period 3
+
+  mutate(
+    period = case_when(
+      timepoint %in% c(1, 2) ~ 1,
+      timepoint %in% c(3, 4) ~ 2), # Make period column
+    
+    timepoint = case_when(
+      timepoint %in% c(1, 3) ~ "pre",
+      timepoint %in% c(2, 4) ~ "post")) %>% # Changing name of timepoints
+  
+  #filter(period == "1") %>% 
+  #filter(timepoint == "pre") %>% 
+  
+  filter(!(id %in% c("50", "55"))) %>% 
+  # Due to missing blood samples
+  
+  mutate(period = as.factor(period)) %>% # Convert period to factor
+  select(id, period, timepoint, c.peptid) %>%  
+  view()
+
+
 
 ```
 
@@ -323,7 +360,8 @@ test_data_wide <- cycling_data %>%
   full_join(immuno_data, by = c("id", "period", "timepoint")) %>%
   full_join(cs_had_data, by = c("id", "period", "timepoint")) %>%
   full_join(hematological_data, by = c("id", "period", "timepoint")) %>%
-  full_join(ferritin_data, by = c("id", "period", "timepoint")) %>%
+  full_join(ferritin_data, by = c("id", "period", "timepoint")) %>% 
+  full_join(blood_markers_data, by = c("id", "period", "timepoint")) %>% 
   
   mutate(bmi = weight/((height/100)^2), # weight in kg, height in meters
           
@@ -361,7 +399,7 @@ test_data_wide <- cycling_data %>%
   filter(!(id %in% c("4", "6", "11", "12", "13" ,"20", "21", "25", "35", "37", "48", "52", "53", "54", "56", "57"))) %>% 
   # Filtering participants not completing training periods 1 and 2
   
-  filter(!(id %in% c("101", "102", "103", "104", "105", "106", "107", "108", "109", "110", "111", "112", "114", "115", "116", "117")))
+  filter(!(id %in% c("101", "102", "103", "104", "105", "106", "107", "108", "109", "110", "111", "112", "114", "115", "116", "117"))) 
   # Filtering participants in other group
   
  
@@ -381,7 +419,7 @@ test_data_long <- test_data_wide %>%
               values_from = value) %>% 
   mutate(change.pre.post = post - pre) %>% 
   mutate(p.change.pre.post = ((post - pre)/pre) *100) %>% 
-  group_by(variable)
+  group_by(variable) %>% print()
 
 
 # Save as RDS for later use 
@@ -545,6 +583,9 @@ vo2_session_data <- vo2.session.data %>%
 cv_calculation_cycling_data <- filtered_max_data %>% 
   full_join(filtered_per_data, by = c("id", "group", "period", "timepoint")) %>%
   filter(timepoint %in% c("pre1", "pre2")) %>% 
+  mutate(vo2.max.bm = vo2.max/weight,
+         watt.max.bm = watt.max/weight,
+         watt.15tt.bm = watt.15tt/weight) %>%
   select(-group) 
 
 cv_calculation_cycling_data_p1_p2 <- cv_calculation_cycling_data %>% 
