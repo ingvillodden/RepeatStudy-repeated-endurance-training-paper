@@ -106,6 +106,10 @@ filtered_max_data <- cycling.data %>%
          (period == 2 & timepoint %in% c(1, 2, 3))) %>% 
           # Timepoints 1 and 2 = pre1 and pre2, timepoint 3 = post
   
+  # Fix incorrect HR value
+  mutate(hr = ifelse(id == "46" & hr < 10, hr * 100, hr)) %>%
+  #Id 46 had 1.74 plotted, when supposed to be 174
+  
   mutate(timepoint = case_when(
     timepoint == 2 & period == 1 ~ "pre1",
     timepoint == 3 & period == 1 ~ "pre2",
@@ -303,7 +307,7 @@ ferritin_data <- iron_status.data %>%
   
   
   mutate(id = as.numeric(as.character(id)), # Convert id to numeric
-         id = as.factor(id)) %>% view() # Convert id back to a factor
+         id = as.factor(id))  # Convert id back to a factor
 
 
 # Save as RDS for later use 
@@ -339,9 +343,8 @@ blood_markers_data <- blood_variables.data %>%
   filter(!(id %in% c("50", "55"))) %>% 
   # Due to missing blood samples
   
-  mutate(period = as.factor(period)) %>% # Convert period to factor
-  select(id, period, timepoint, c.peptid) %>%  
-  view()
+  mutate(period = as.factor(period)) # Convert period to factor
+
 
 
 
@@ -419,8 +422,7 @@ test_data_long <- test_data_wide %>%
               values_from = value) %>% 
   mutate(change.pre.post = post - pre) %>% 
   mutate(p.change.pre.post = ((post - pre)/pre) *100) %>% 
-  group_by(variable) %>% print()
-
+  group_by(variable) 
 
 # Save as RDS for later use 
 #saveRDS(test_data_long, file = "data/derivedData/test_data_long")
@@ -479,6 +481,24 @@ activity_before_intervention_questionnaire_data <- fa_questionnaire.data %>%
 #saveRDS(activity_before_intervention_questionnaire_data, file = "data/derivedData/activity_before_intervention_questionnaire_data")
 
 ```
+
+
+### Physical activity last five years:
+
+Participants were asked how many times per week they in average had engaged in physical activity or sports that made them breathless and/or sweaty the last five years.
+
+```{r, pa 5 years}
+
+activity_life_questionnaire_data <- fa_trough_life.data %>% 
+  select(id, physical_activity_last_5_years) %>% 
+  rename(physical.activity.last.5.years = physical_activity_last_5_years) %>%
+  filter(!(id %in% c("4", "6", "11", "12", "13" ,"20", "21", "25", "35", "37", "48", "52", "53", "54", "56", "57"))) 
+  # Filtering participants not completing training periods 1 and 2
+  
+
+```
+
+
 
 # Session data:
 

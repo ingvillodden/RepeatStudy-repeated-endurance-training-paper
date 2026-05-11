@@ -18,6 +18,13 @@ activity_questionnaire_data <- readRDS(file = "data/derivedData/activity_questio
 
 ```
 
+### Activity level analysis
+
+1. Mean and individual reproducibility of recreational activity level during intervention
+2. Activity level last 5 years
+
+
+
 ### Mean and individual reproducibility of recreational activity level
 
 Kcal/week used on recreational activities
@@ -219,3 +226,36 @@ pearsons.r <- r_data %>%
 
 
 ```
+
+
+### 2. Activity level last 5 years
+
+```{r}
+
+## Activity 8 weeks before intervention onset
+sex_data <- test_data_wide %>% 
+  filter(period == "1") %>% 
+  filter(timepoint == "pre") %>% 
+  select(id, sex)
+
+
+
+# Mean (sd) per sex and all participant
+activity_last_5_years_sex <- activity_life_questionnaire_data %>% 
+  inner_join(sex_data) %>%
+  group_by(sex) %>% 
+  summarise(across(physical.activity.last.5.years,
+                   list(mean_sd = ~sprintf("%.1f (%.1f)", mean(.x, na.rm = TRUE), sd(.x, na.rm = TRUE))),
+                   .names = "{.col}")) %>% print()
+
+activity_last_5_years <- activity_life_questionnaire_data %>% 
+  group_by() %>% 
+  summarise(across(physical.activity.last.5.years,
+                   list(mean_sd = ~sprintf("%.1f (%.1f)", mean(.x, na.rm = TRUE), sd(.x, na.rm = TRUE))),
+                   .names = "{.col}")) %>% print()
+
+```
+
+
+
+

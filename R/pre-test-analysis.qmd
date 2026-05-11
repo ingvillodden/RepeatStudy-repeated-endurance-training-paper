@@ -85,7 +85,7 @@ calculate_reliability <- function(data, period_filter = NULL, variables) {
 # List of variables to calculate CV and TE for
 variables <- c("vo2.max", "watt.max", "watt.15tt", 
                "vo2.max.bm", "watt.max.bm", "watt.15tt.bm",
-               "rer.max", "lac.max", "rpe.max") # Only measures with double pre-tests
+               "hr.max", "rer.max", "lac.max", "rpe.max") # Only measures with double pre-tests
 
 # Apply the function to calculate CV and TE for each period and both periods combined
 reliability_p1 <- calculate_reliability(cv_calculation_cycling_data_p1_p2, period_filter = 1, variables = variables)  
@@ -355,6 +355,23 @@ contrast(emmeans(mod, ~ period * timepoint),
          infer = TRUE)
 
 
+# Comparison of [La-] values at all timepoints
+hr_data <- test_data_wide %>% 
+  select(id, period, timepoint, hr.max) %>% print()
+
+
+hr_data$period <- factor(hr_data$period, levels = c("1", "2"))
+hr_data$timepoint <- factor(hr_data$timepoint, levels = c("pre", "post"))
+
+
+mod <- lmer(hr.max ~ period*timepoint + (1|id), data = hr_data)
+emm <- emmeans(mod, ~ period * timepoint)
+pairs(emm, adjust = "bonferroni", infer = TRUE)
+contrast(emmeans(mod, ~ period * timepoint), 
+         interaction = "pairwise",
+         infer = TRUE)
+
+
 # Comparison of RPE values at all timepoints
 rpe_data <- test_data_wide %>% 
   select(id, period, timepoint, rpe.max) %>% print()
@@ -394,6 +411,14 @@ vb <- vc$vcov[vc$grp == "id"]
 vw <- vc$vcov[vc$grp == "Residual"]
 icc <- vb / (vb + vw)
 
+# Function for bootstrap
+extract_icc <- function(fit) {
+  vc <- as.data.frame(VarCorr(fit))
+  vb <- vc$vcov[vc$grp == "id"]
+  vw <- vc$vcov[vc$grp == "Residual"]
+  vb / (vb + vw)
+}
+
 # Bootstrap CI
 boot_res <- bootMer(
   mod,
@@ -404,9 +429,10 @@ boot_res <- bootMer(
   seed = 123
 )
 
+# CI
 ci <- quantile(boot_res$t[,1], c(0.025, 0.975), na.rm = TRUE)
 
-# Print nicely
+# Output
 sprintf("ICC = %.2f [%.2f, %.2f]", icc, ci[1], ci[2])
 
 
@@ -429,6 +455,14 @@ vb <- vc$vcov[vc$grp == "id"]
 vw <- vc$vcov[vc$grp == "Residual"]
 icc <- vb / (vb + vw)
 
+# Function for bootstrap
+extract_icc <- function(fit) {
+  vc <- as.data.frame(VarCorr(fit))
+  vb <- vc$vcov[vc$grp == "id"]
+  vw <- vc$vcov[vc$grp == "Residual"]
+  vb / (vb + vw)
+}
+
 # Bootstrap CI
 boot_res <- bootMer(
   mod,
@@ -439,19 +473,21 @@ boot_res <- bootMer(
   seed = 123
 )
 
+# CI
 ci <- quantile(boot_res$t[,1], c(0.025, 0.975), na.rm = TRUE)
 
-# Print nicely
+# Output
 sprintf("ICC = %.2f [%.2f, %.2f]", icc, ci[1], ci[2])
 
 
 
-# ICC of RPE values at all timepoints
+
+# ICC of HRmax values at all timepoints
 
 # Prepare data
 df <- test_data_wide %>%
-  select(id, period, timepoint, rpe.max) %>%
-  rename(value = rpe.max) %>%
+  select(id, period, timepoint, hr.max) %>%
+  rename(value = hr.max) %>%
   filter(!is.na(value)) %>%
   mutate(id = factor(id))
 
@@ -464,6 +500,14 @@ vb <- vc$vcov[vc$grp == "id"]
 vw <- vc$vcov[vc$grp == "Residual"]
 icc <- vb / (vb + vw)
 
+# Function for bootstrap
+extract_icc <- function(fit) {
+  vc <- as.data.frame(VarCorr(fit))
+  vb <- vc$vcov[vc$grp == "id"]
+  vw <- vc$vcov[vc$grp == "Residual"]
+  vb / (vb + vw)
+}
+
 # Bootstrap CI
 boot_res <- bootMer(
   mod,
@@ -474,9 +518,55 @@ boot_res <- bootMer(
   seed = 123
 )
 
+# CI
 ci <- quantile(boot_res$t[,1], c(0.025, 0.975), na.rm = TRUE)
 
-# Print nicely
+# Output
+sprintf("ICC = %.2f [%.2f, %.2f]", icc, ci[1], ci[2])
+
+
+
+
+# ICC of RPE values at all timepoints
+
+# Prepare data
+df <- test_data_wide %>%
+  select(id, period, timepoint, rer.max) %>%
+  rename(value = rer.max) %>%
+  filter(!is.na(value)) %>%
+  mutate(id = factor(id))
+
+# Fit model
+mod <- lmer(value ~ 1 + (1 | id), data = df, REML = TRUE)
+
+# Extract ICC
+vc <- as.data.frame(VarCorr(mod))
+vb <- vc$vcov[vc$grp == "id"]
+vw <- vc$vcov[vc$grp == "Residual"]
+icc <- vb / (vb + vw)
+
+# Function for bootstrap
+extract_icc <- function(fit) {
+  vc <- as.data.frame(VarCorr(fit))
+  vb <- vc$vcov[vc$grp == "id"]
+  vw <- vc$vcov[vc$grp == "Residual"]
+  vb / (vb + vw)
+}
+
+# Bootstrap CI
+boot_res <- bootMer(
+  mod,
+  FUN = extract_icc,
+  nsim = 1000,
+  use.u = TRUE,
+  type = "parametric",
+  seed = 123
+)
+
+# CI
+ci <- quantile(boot_res$t[,1], c(0.025, 0.975), na.rm = TRUE)
+
+# Output
 sprintf("ICC = %.2f [%.2f, %.2f]", icc, ci[1], ci[2])
 
 
